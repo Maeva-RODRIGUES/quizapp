@@ -48,7 +48,11 @@ pas de filtre par catégorie exposé, pas de base de données.
 
 ## Lancer le projet
 
-Prérequis : un JDK 21 ou plus récent. Maven n'est pas nécessaire, le wrapper `./mvnw` est fourni.
+Prérequis :
+
+- un JDK 21 ou plus récent (Maven n'est pas nécessaire, le wrapper `./mvnw` est fourni) ;
+- Docker avec Docker Compose : `./mvnw spring-boot:run` démarre automatiquement PostgreSQL
+  (`compose.yaml`, port local 5433) et les tests utilisent un PostgreSQL éphémère (Testcontainers).
 
 ```bash
 # Compiler et lancer les tests

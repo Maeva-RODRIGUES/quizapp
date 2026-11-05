@@ -1,0 +1,25 @@
+# Environnement local : démarré automatiquement par `./mvnw spring-boot:run`
+# (module spring-boot-docker-compose), ou à la main avec `docker compose up -d`.
+# Identifiants de développement uniquement : cette base n'est jamais exposée hors de la machine.
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: quizapp
+      POSTGRES_USER: quizapp
+      POSTGRES_PASSWORD: quizapp
+    ports:
+      # Port 5433 côté machine (le 5432 est souvent déjà pris par un PostgreSQL local),
+      # accessible depuis cette machine seulement.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      # PostgreSQL 18 range ses données dans /var/lib/postgresql/18/docker : on monte le dossier parent.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quizapp -d quizapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
