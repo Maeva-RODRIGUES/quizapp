@@ -18,16 +18,20 @@ public class Question {
     // "options" est une liste de chaînes de caractères, qui contient les différentes options de réponse proposées pour la question
     private List<String> options;
 
+    // "category" est le nom de la catégorie à laquelle appartient la question (ex. "Phobies étranges")
+    private String category;
+
     // Constructeur sans argument (par défaut)
     // Il permet de créer un objet Question vide sans initialiser les valeurs directement
     public Question() {}
 
-    // Constructeur avec trois paramètres : id, questionText, et options
+    // Constructeur avec quatre paramètres : id, questionText, options et category
     // Il permet d'initialiser un objet Question avec des valeurs fournies pour chaque attribut
-    public Question(Long id, String questionText, List<String> options) {
+    public Question(Long id, String questionText, List<String> options, String category) {
         this.id = id; // initialisation de l'attribut id avec la valeur passée en paramètre
         this.questionText = questionText; // initialisation de l'attribut questionText
         this.options = options; // initialisation de l'attribut options
+        this.category = category; // initialisation de l'attribut category
     }
 
     // Getter pour l'attribut "id"
@@ -64,6 +68,18 @@ public class Question {
     // Permet de modifier la liste des options de réponses pour la question
     public void setOptions(List<String> options) {
         this.options = options;
+    }
+
+    // Getter pour l'attribut "category"
+    // Permet de récupérer la catégorie de la question
+    public String getCategory() {
+        return category;
+    }
+
+    // Setter pour l'attribut "category"
+    // Permet de modifier la catégorie de la question
+    public void setCategory(String category) {
+        this.category = category;
     }
 }
 

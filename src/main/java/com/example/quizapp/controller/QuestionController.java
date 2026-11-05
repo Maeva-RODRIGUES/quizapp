@@ -20,8 +20,8 @@ public class QuestionController {
 
     @GetMapping // Cette annotation signifie que cette méthode est liée à une requête HTTP GET. Elle est appelée lorsque l'utilisateur envoie une requête GET à "/api/questions".
     public List<Question> getQuestions() {
-        // Appelle la méthode getQuestions() du service pour obtenir la liste de toutes les questions.
+        // Appelle la méthode getAllQuestions() du service pour obtenir la liste de toutes les questions.
         // La liste de questions est renvoyée en tant que réponse JSON au client.
-        return questionService.getQuestions();
+        return questionService.getAllQuestions();
     }
 }
