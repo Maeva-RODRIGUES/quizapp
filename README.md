@@ -18,11 +18,11 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | Base de données | PostgreSQL 18, schéma versionné avec Liquibase (catégories, questions, réponses, contraintes de qualité), catégories de référence et 10 questions de démo |
 | Domaine | modèle métier en Java pur (questions, catégories, correction et score), cas d'usage et ports, sans dépendance au framework |
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
-| API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`), lues depuis PostgreSQL, sans jamais exposer la bonne réponse |
+| API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`) sans jamais exposer la bonne réponse, `POST /api/quiz/submit` (score et correction), entrées validées |
 | Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
 
-Limites connues (traitées dans la refonte) : pas encore de soumission d'un quiz ni de gestion des erreurs
-(une catégorie inconnue renvoie pour l'instant une erreur 500).
+Limites connues (traitées dans la refonte) : pas encore de gestion centralisée des erreurs (une catégorie
+inconnue renvoie pour l'instant une erreur 500, et les erreurs 400 ne détaillent pas le champ en cause).
 
 ## Architecture
 
@@ -103,8 +103,9 @@ docker compose exec postgres psql -U quizapp -d quizapp
 | `GET` | `/api/categories` | catégories disponibles |
 | `GET` | `/api/questions` | toutes les questions |
 | `GET` | `/api/questions?category=phobies` | questions d'une catégorie (par son code) |
+| `POST` | `/api/quiz/submit` | corrige les réponses au quiz d'une catégorie |
 
-Les questions sont renvoyées **sans la bonne réponse**.
+Les questions sont renvoyées **sans la bonne réponse** : elle n'est révélée qu'après soumission.
 
 ```bash
 curl -s http://localhost:8080/api/categories
@@ -131,3 +132,26 @@ curl -s "http://localhost:8080/api/questions?category=phobies"
   }
 ]
 ```
+
+Soumettre un quiz : `answers` associe l'id de chaque question à l'index de la réponse choisie (à partir de 0).
+Le quiz comprend **toutes** les questions de la catégorie : une question sans réponse compte comme fausse.
+
+```bash
+curl -s -X POST http://localhost:8080/api/quiz/submit \
+  -H 'Content-Type: application/json' \
+  -d '{"category": "phobies", "answers": {"6": 2, "7": 1}}'
+```
+
+```json
+{
+  "score": 1,
+  "total": 5,
+  "corrections": [
+    {"questionId": 6, "givenOptionIndex": 2, "correctOptionIndex": 2, "correct": true},
+    {"questionId": 7, "givenOptionIndex": 1, "correctOptionIndex": 0, "correct": false},
+    {"questionId": 8, "givenOptionIndex": null, "correctOptionIndex": 1, "correct": false}
+  ]
+}
+```
+
+(extrait : une correction par question de la catégorie)
