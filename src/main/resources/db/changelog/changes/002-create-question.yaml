@@ -1,0 +1,108 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-question
+      author: maeva-rodrigues
+      changes:
+        - createTable:
+            tableName: question
+            remarks: Questions du quiz
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_question
+              - column:
+                  name: category_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_question_category
+                    references: category(id)
+              - column:
+                  name: text
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: correct_option_index
+                  type: SMALLINT
+                  remarks: Index (à partir de 0) de la bonne réponse dans question_option.option_index
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 002-create-question-option
+      author: maeva-rodrigues
+      changes:
+        - createTable:
+            tableName: question_option
+            remarks: Réponses proposées pour une question, dans l'ordre d'affichage
+            columns:
+              - column:
+                  name: question_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_question_option
+                    foreignKeyName: fk_question_option_question
+                    references: question(id)
+                    deleteCascade: true
+              - column:
+                  name: option_index
+                  type: SMALLINT
+                  remarks: Position de la réponse (à partir de 0)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_question_option
+              - column:
+                  name: label
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 002-question-check-constraints
+      author: maeva-rodrigues
+      comment: Règles de qualité (contraintes CHECK, écrites en SQL PostgreSQL).
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE question ADD CONSTRAINT ck_question_text_not_blank
+                  CHECK (btrim(text) <> '');
+              ALTER TABLE question ADD CONSTRAINT ck_question_correct_option_index
+                  CHECK (correct_option_index >= 0);
+              ALTER TABLE question_option ADD CONSTRAINT ck_question_option_index
+                  CHECK (option_index >= 0);
+              ALTER TABLE question_option ADD CONSTRAINT ck_question_option_label_not_blank
+                  CHECK (btrim(label) <> '');
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE question_option DROP CONSTRAINT ck_question_option_label_not_blank;
+              ALTER TABLE question_option DROP CONSTRAINT ck_question_option_index;
+              ALTER TABLE question DROP CONSTRAINT ck_question_correct_option_index;
+              ALTER TABLE question DROP CONSTRAINT ck_question_text_not_blank;
+
+  - changeSet:
+      id: 002-question-text-key-unique
+      author: maeva-rodrigues
+      comment: >
+        Anti-doublon : text_key est calculée par PostgreSQL (minuscules, espaces normalisés).
+        Une même question ne peut exister qu'une fois par catégorie.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE question ADD COLUMN text_key VARCHAR(500)
+                  GENERATED ALWAYS AS (lower(regexp_replace(btrim(text), '\s+', ' ', 'g'))) STORED;
+              ALTER TABLE question ADD CONSTRAINT uq_question_category_text_key
+                  UNIQUE (category_id, text_key);
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE question DROP CONSTRAINT uq_question_category_text_key;
+              ALTER TABLE question DROP COLUMN text_key;

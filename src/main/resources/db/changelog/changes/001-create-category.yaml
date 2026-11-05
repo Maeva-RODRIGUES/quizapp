@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-category
+      author: maeva-rodrigues
+      comment: Référentiel des catégories de questions.
+      changes:
+        - createTable:
+            tableName: category
+            remarks: Référentiel des catégories de questions
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_category
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  remarks: Identifiant stable et lisible, utilisé dans l'API et les fichiers d'import (ex. phobies)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_category_code
+              - column:
+                  name: label
+                  type: VARCHAR(100)
+                  remarks: Libellé affiché
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-category-check-constraints
+      author: maeva-rodrigues
+      comment: Règles de qualité sur le référentiel (contraintes CHECK, écrites en SQL PostgreSQL).
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE category ADD CONSTRAINT ck_category_code_format
+                  CHECK (code ~ '^[a-z0-9]+(-[a-z0-9]+)*$');
+              ALTER TABLE category ADD CONSTRAINT ck_category_label_not_blank
+                  CHECK (btrim(label) <> '');
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE category DROP CONSTRAINT ck_category_label_not_blank;
+              ALTER TABLE category DROP CONSTRAINT ck_category_code_format;

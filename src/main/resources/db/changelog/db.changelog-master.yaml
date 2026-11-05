@@ -1,0 +1,10 @@
+# Point d'entrée Liquibase (emplacement par défaut lu par Spring Boot).
+# Les fichiers sont appliqués dans l'ordre listé. Règle : on ne modifie jamais un changeset
+# déjà appliqué, on en ajoute un nouveau.
+databaseChangeLog:
+  - include:
+      file: changes/001-create-category.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/002-create-question.yaml
+      relativeToChangelogFile: true
