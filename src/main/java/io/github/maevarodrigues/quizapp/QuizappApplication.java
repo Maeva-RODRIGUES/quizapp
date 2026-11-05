@@ -1,4 +1,4 @@
-package com.example.quizapp;
+package io.github.maevarodrigues.quizapp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

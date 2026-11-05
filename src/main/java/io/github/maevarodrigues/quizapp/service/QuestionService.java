@@ -1,9 +1,9 @@
 // Logique pour générer et renvoyer les questions - QuestionService.java
 
-package com.example.quizapp.service;
+package io.github.maevarodrigues.quizapp.service;
 
 
-import com.example.quizapp.model.Question;
+import io.github.maevarodrigues.quizapp.model.Question;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

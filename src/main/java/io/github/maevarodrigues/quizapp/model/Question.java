@@ -1,6 +1,6 @@
 // Modèle de données pour une question - Question.java
 
-package com.example.quizapp.model;
+package io.github.maevarodrigues.quizapp.model;
 
 // Importation de la classe List du package java.util pour manipuler des collections de type liste
 import java.util.List;

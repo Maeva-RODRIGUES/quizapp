@@ -1,9 +1,9 @@
 // Ce contrôleur REST fournit une API pour récupérer une liste de questions de quiz sous format JSON - QuestionController.java
 
-package com.example.quizapp.controller;
+package io.github.maevarodrigues.quizapp.controller;
 
-import com.example.quizapp.model.Question;
-import com.example.quizapp.service.QuestionService;
+import io.github.maevarodrigues.quizapp.model.Question;
+import io.github.maevarodrigues.quizapp.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
