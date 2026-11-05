@@ -18,11 +18,11 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | Base de données | PostgreSQL 18, schéma versionné avec Liquibase (catégories, questions, réponses, contraintes de qualité), catégories de référence et 10 questions de démo |
 | Domaine | modèle métier en Java pur (questions, catégories, correction et score), cas d'usage et ports, sans dépendance au framework |
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
-| API | `GET /api/questions` : liste de toutes les questions (encore servies depuis la mémoire, branchement sur la base en phase 5) |
+| API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`), lues depuis PostgreSQL, sans jamais exposer la bonne réponse |
 | Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
 
-Limites connues (traitées dans la refonte) : l'API ne lit pas encore la base et n'expose pas encore
-le filtre par catégorie ni la soumission d'un quiz.
+Limites connues (traitées dans la refonte) : pas encore de soumission d'un quiz ni de gestion des erreurs
+(une catégorie inconnue renvoie pour l'instant une erreur 500).
 
 ## Architecture
 
@@ -39,9 +39,10 @@ io.github.maevarodrigues.quizapp
 │       └── out             besoins vers l'extérieur (QuestionRepository, CategoryRepository)
 ├── application             services qui implémentent les ports « in » à l'aide des ports « out »
 ├── adapters
+│   ├── in/web              controllers REST et DTO : n'appellent que les ports « in »
 │   └── out/persistence     implémentations jOOQ des ports « out » (+ code jOOQ généré)
-│                           (à venir : in/web pour le REST, in/batch pour l'import)
-└── config                  (à venir) assemblage des beans Spring
+│                           (à venir : in/batch pour l'import)
+└── config                  assemblage des beans Spring (services applicatifs)
 ```
 
 ## Stack cible
@@ -95,21 +96,38 @@ Pour explorer la base :
 docker compose exec postgres psql -U quizapp -d quizapp
 ```
 
-Puis, dans un autre terminal :
+## API
+
+| Méthode | URL | Description |
+|---|---|---|
+| `GET` | `/api/categories` | catégories disponibles |
+| `GET` | `/api/questions` | toutes les questions |
+| `GET` | `/api/questions?category=phobies` | questions d'une catégorie (par son code) |
+
+Les questions sont renvoyées **sans la bonne réponse**.
 
 ```bash
-curl -s http://localhost:8080/api/questions
+curl -s http://localhost:8080/api/categories
 ```
 
-Exemple de réponse (extrait) :
+```json
+[
+  {"code": "superstitions", "label": "Superstitions étranges"},
+  {"code": "phobies", "label": "Phobies étranges"}
+]
+```
+
+```bash
+curl -s "http://localhost:8080/api/questions?category=phobies"
+```
 
 ```json
 [
   {
     "id": 6,
-    "questionText": "Quel est le nom de la peur des araignées ?",
-    "options": ["Entomophobie", "Myrmécophobie", "Arachnophobie"],
-    "category": "Phobies étranges"
+    "category": "phobies",
+    "text": "Quel est le nom de la peur des araignées ?",
+    "options": ["Entomophobie", "Myrmécophobie", "Arachnophobie"]
   }
 ]
 ```

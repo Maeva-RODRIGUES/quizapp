@@ -39,6 +39,12 @@ class ArchitectureTest {
             .because("les dépendances pointent vers le centre, jamais vers l'extérieur");
 
     @ArchTest
+    static final ArchRule incomingAdaptersOnlyUseInboundPorts = noClasses()
+            .that().resideInAPackage("..quizapp.adapters.in..")
+            .should().dependOnClassesThat().resideInAnyPackage(APPLICATION, "..quizapp.adapters.out..", "..quizapp.domain.port.out..")
+            .because("un controller appelle un cas d'usage (port « in ») ; il ne connaît ni son implémentation ni la base");
+
+    @ArchTest
     static final ArchRule portsAreInterfaces = classes()
             .that().resideInAPackage("..quizapp.domain.port..")
             .should().beInterfaces()
