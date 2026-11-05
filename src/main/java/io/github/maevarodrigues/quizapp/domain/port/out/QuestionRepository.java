@@ -14,4 +14,14 @@ public interface QuestionRepository {
 
     /** Les questions d'une catégorie, triées par id ; liste vide si la catégorie n'en a aucune. */
     List<Question> findByCategoryCode(String categoryCode);
+
+    /**
+     * Enregistre de nouvelles questions avec leurs réponses, en une seule transaction : tout ou rien.
+     *
+     * @param questions questions pas encore enregistrées (id {@code null})
+     * @return les mêmes questions, avec l'id attribué par la base, dans le même ordre
+     * @throws IllegalArgumentException si une question a déjà un id
+     * @throws io.github.maevarodrigues.quizapp.domain.exception.UnknownCategoryException si une catégorie n'existe pas
+     */
+    List<Question> saveAll(List<Question> questions);
 }

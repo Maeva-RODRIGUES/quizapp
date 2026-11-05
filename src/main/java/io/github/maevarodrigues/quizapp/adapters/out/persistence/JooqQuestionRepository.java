@@ -1,5 +1,6 @@
 package io.github.maevarodrigues.quizapp.adapters.out.persistence;
 
+import io.github.maevarodrigues.quizapp.domain.exception.UnknownCategoryException;
 import io.github.maevarodrigues.quizapp.domain.model.Question;
 import io.github.maevarodrigues.quizapp.domain.port.out.QuestionRepository;
 import org.jooq.Condition;
@@ -9,9 +10,13 @@ import org.jooq.Record2;
 import org.jooq.Records;
 import org.jooq.Result;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.github.maevarodrigues.quizapp.adapters.out.persistence.jooq.Tables.CATEGORY;
 import static io.github.maevarodrigues.quizapp.adapters.out.persistence.jooq.Tables.QUESTION;
@@ -51,6 +56,62 @@ public class JooqQuestionRepository implements QuestionRepository {
     @Override
     public List<Question> findByCategoryCode(String categoryCode) {
         return fetchQuestions(CATEGORY.CODE.eq(categoryCode));
+    }
+
+    /**
+     * Insère chaque question puis ses réponses. {@code @Transactional} : si une seule insertion échoue
+     * (doublon, catégorie inconnue…), tout le lot est annulé : aucune question à moitié écrite.
+     * Les violations de contraintes remontent traduites par Spring (ex. {@code DuplicateKeyException}).
+     */
+    @Override
+    @Transactional
+    public List<Question> saveAll(List<Question> questions) {
+        if (questions.isEmpty()) {
+            return List.of();
+        }
+        questions.stream()
+                .filter(question -> question.id() != null)
+                .findFirst()
+                .ifPresent(question -> {
+                    throw new IllegalArgumentException("question " + question.id() + " is already saved");
+                });
+        Map<String, Long> categoryIds = resolveCategoryIds(questions);
+        List<Question> saved = new ArrayList<>(questions.size());
+        for (Question question : questions) {
+            long id = dsl.insertInto(QUESTION, QUESTION.CATEGORY_ID, QUESTION.TEXT, QUESTION.CORRECT_OPTION_INDEX)
+                    .values(categoryIds.get(question.categoryCode()), question.text(), (short) question.correctOptionIndex())
+                    .returningResult(QUESTION.ID)
+                    .fetchSingle(QUESTION.ID);
+            insertOptions(id, question.options());
+            saved.add(new Question(id, question.categoryCode(), question.text(), question.options(), question.correctOptionIndex()));
+        }
+        return saved;
+    }
+
+    /** Une seule requête pour toutes les catégories du lot ; une catégorie absente arrête tout. */
+    private Map<String, Long> resolveCategoryIds(List<Question> questions) {
+        Set<String> codes = questions.stream().map(Question::categoryCode).collect(Collectors.toSet());
+        Map<String, Long> ids = dsl.select(CATEGORY.CODE, CATEGORY.ID)
+                .from(CATEGORY)
+                .where(CATEGORY.CODE.in(codes))
+                .fetchMap(CATEGORY.CODE, CATEGORY.ID);
+        codes.stream()
+                .filter(code -> !ids.containsKey(code))
+                .findFirst()
+                .ifPresent(code -> {
+                    throw new UnknownCategoryException(code);
+                });
+        return ids;
+    }
+
+    /** Toutes les réponses d'une question en un seul INSERT multi-lignes, avec leur position (0, 1, 2…). */
+    private void insertOptions(long questionId, List<String> options) {
+        var insert = dsl.insertInto(QUESTION_OPTION,
+                QUESTION_OPTION.QUESTION_ID, QUESTION_OPTION.OPTION_INDEX, QUESTION_OPTION.LABEL);
+        for (int index = 0; index < options.size(); index++) {
+            insert = insert.values(questionId, (short) index, options.get(index));
+        }
+        insert.execute();
     }
 
     private List<Question> fetchQuestions(Condition condition) {
