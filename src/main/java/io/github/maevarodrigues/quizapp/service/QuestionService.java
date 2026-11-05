@@ -1,7 +1,4 @@
-// Logique pour générer et renvoyer les questions - QuestionService.java
-
 package io.github.maevarodrigues.quizapp.service;
-
 
 import io.github.maevarodrigues.quizapp.model.Question;
 import org.springframework.stereotype.Service;
@@ -10,10 +7,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Fournit les questions du quiz.
+ * <p>
+ * Version provisoire : les questions sont définies en mémoire. Elles seront lues
+ * depuis PostgreSQL à partir de la phase 4.
+ */
 @Service
 public class QuestionService {
 
-    // Méthode pour obtenir toutes les questions
+    /**
+     * Renvoie toutes les questions, toutes catégories confondues.
+     */
     public List<Question> getAllQuestions() {
         List<Question> questions = new ArrayList<>();
 
@@ -82,7 +87,9 @@ public class QuestionService {
         return questions;
     }
 
-    // Méthode pour filtrer les questions par catégorie
+    /**
+     * Renvoie les questions d'une catégorie (comparaison insensible à la casse).
+     */
     public List<Question> getQuestionsByCategory(String category) {
         return getAllQuestions().stream()
                 .filter(question -> question.getCategory().equalsIgnoreCase(category))

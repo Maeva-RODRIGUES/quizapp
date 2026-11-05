@@ -1,27 +1,33 @@
-// Ce contrôleur REST fournit une API pour récupérer une liste de questions de quiz sous format JSON - QuestionController.java
-
 package io.github.maevarodrigues.quizapp.controller;
 
 import io.github.maevarodrigues.quizapp.model.Question;
 import io.github.maevarodrigues.quizapp.service.QuestionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@RestController // Annotation indiquant que cette classe est un contrôleur Spring REST. Elle gère les requêtes HTTP et renvoie des réponses au format JSON.
-@RequestMapping("/api/questions") // Spécifie que les requêtes envoyées à "/api/questions" seront traitées par ce contrôleur.
+/**
+ * API REST des questions du quiz. Les réponses sont sérialisées en JSON.
+ */
+@RestController
+@RequestMapping("/api/questions")
 public class QuestionController {
 
-    @Autowired // Injection de dépendance de Spring. Elle permet d'injecter automatiquement une instance de QuestionService sans avoir besoin de l'initialiser manuellement.
-    private QuestionService questionService;
+    private final QuestionService questionService;
 
-    @GetMapping // Cette annotation signifie que cette méthode est liée à une requête HTTP GET. Elle est appelée lorsque l'utilisateur envoie une requête GET à "/api/questions".
+    // Injection par constructeur : la dépendance est obligatoire et immuable (final).
+    // Avec un seul constructeur, Spring l'utilise automatiquement, sans @Autowired.
+    public QuestionController(QuestionService questionService) {
+        this.questionService = questionService;
+    }
+
+    /**
+     * {@code GET /api/questions} : renvoie toutes les questions.
+     */
+    @GetMapping
     public List<Question> getQuestions() {
-        // Appelle la méthode getAllQuestions() du service pour obtenir la liste de toutes les questions.
-        // La liste de questions est renvoyée en tant que réponse JSON au client.
         return questionService.getAllQuestions();
     }
 }

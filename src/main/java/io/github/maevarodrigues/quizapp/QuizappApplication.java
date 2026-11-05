@@ -3,12 +3,16 @@ package io.github.maevarodrigues.quizapp;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+/**
+ * Point d'entrée de l'application.
+ * <p>
+ * {@code @SpringBootApplication} active l'auto-configuration et le scan des composants
+ * de ce package et de ses sous-packages.
+ */
 @SpringBootApplication
-public class QuizappApplication { // Annotation qui combine plusieurs fonctionnalités de Spring. Elle active l'auto-configuration, le balayage des composants et la configuration basée sur Spring Boot.
+public class QuizappApplication {
 
 	public static void main(String[] args) {
-	// Méthode principale qui sert de point d'entrée à l'application Spring Boot.
-	// SpringApplication.run lance l'application Spring Boot et crée un contexte d'application Spring.
 		SpringApplication.run(QuizappApplication.class, args);
 	}
 
