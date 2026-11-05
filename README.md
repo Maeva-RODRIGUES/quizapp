@@ -16,11 +16,30 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 |---|---|
 | Langage / framework | Java 21, Spring Boot 4.1 |
 | Base de données | PostgreSQL 18, schéma versionné avec Liquibase (catégories, questions, réponses, contraintes de qualité), catégories de référence et 10 questions de démo |
+| Domaine | modèle métier en Java pur (questions, catégories, correction et score), cas d'usage et ports, sans dépendance au framework |
 | API | `GET /api/questions` : liste de toutes les questions (encore servies depuis la mémoire, branchement sur la base en phases 4-5) |
-| Tests | tests unitaires et d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
+| Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
 
-Limites connues (traitées dans la refonte) : l'API ne lit pas encore la base, pas de calcul de score,
-pas de filtre par catégorie exposé.
+Limites connues (traitées dans la refonte) : l'API ne lit pas encore la base et n'expose pas encore
+le filtre par catégorie ni la soumission d'un quiz.
+
+## Architecture
+
+Architecture hexagonale (*ports & adapters*) : le métier est au centre, les détails techniques autour.
+Les dépendances pointent toujours vers le centre, et une règle ArchUnit le vérifie à chaque build.
+
+```
+io.github.maevarodrigues.quizapp
+├── domain                  cœur métier, Java pur
+│   ├── model               Category, Question, QuizSubmission, QuizResult…
+│   ├── exception           erreurs métier
+│   └── port
+│       ├── in              cas d'usage offerts (ListCategoriesUseCase, SubmitQuizUseCase…)
+│       └── out             besoins vers l'extérieur (QuestionRepository, CategoryRepository)
+├── application             services qui implémentent les ports « in » à l'aide des ports « out »
+├── adapters                (à venir) REST, persistance jOOQ, batch
+└── config                  (à venir) assemblage des beans Spring
+```
 
 ## Stack cible
 
@@ -38,7 +57,7 @@ pas de filtre par catégorie exposé.
 - [x] **Phase 0** : réparer le build, documenter l'état du projet
 - [x] **Phase 1** : passer à Java 21 et à une version maintenue de Spring Boot, nettoyer le contenu des questions, intégration continue
 - [x] **Phase 2** : PostgreSQL avec Docker Compose, schéma et données de référence avec Liquibase
-- [ ] **Phase 3** : modèle de domaine hexagonal et tests unitaires
+- [x] **Phase 3** : modèle de domaine hexagonal, tests unitaires et règles d'architecture
 - [ ] **Phase 4** : persistance avec jOOQ, tests d'intégration Testcontainers
 - [ ] **Phase 5** : API complète (catégories, questions par catégorie, soumission et score), validation, gestion d'erreurs
 - [ ] **Phase 6** : job Spring Batch d'import CSV avec règles de qualité des données
