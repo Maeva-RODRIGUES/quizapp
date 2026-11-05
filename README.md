@@ -12,7 +12,7 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 
 | | Aujourd'hui |
 |---|---|
-| Langage / framework | Java 17, Spring Boot 3.3 |
+| Langage / framework | Java 21, Spring Boot 4.1 |
 | Données | 10 questions définies en mémoire dans le code |
 | API | `GET /api/questions` : liste de toutes les questions |
 | Tests | test de démarrage du contexte Spring |
@@ -46,7 +46,7 @@ pas de filtre par catégorie exposé, pas de base de données.
 
 ## Lancer le projet
 
-Prérequis : un JDK 17 ou plus récent. Maven n'est pas nécessaire, le wrapper `./mvnw` est fourni.
+Prérequis : un JDK 21 ou plus récent. Maven n'est pas nécessaire, le wrapper `./mvnw` est fourni.
 
 ```bash
 # Compiler et lancer les tests
