@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-load-categories
+      author: maeva-rodrigues
+      comment: >
+        Référentiel des catégories, chargé dans tous les environnements (pas de context).
+        Les ids sont explicites : la séquence est recalée juste après, dans la même transaction.
+      changes:
+        - loadData:
+            tableName: category
+            file: db/data/categories.csv
+            separator: ;
+            encoding: UTF-8
+            columns:
+              - column: {name: id, type: NUMERIC}
+              - column: {name: code, type: STRING}
+              - column: {name: label, type: STRING}
+        - sql:
+            sql: SELECT setval(pg_get_serial_sequence('category', 'id'), (SELECT max(id) FROM category));
+      rollback:
+        - sql:
+            sql: DELETE FROM category WHERE id IN (1, 2);

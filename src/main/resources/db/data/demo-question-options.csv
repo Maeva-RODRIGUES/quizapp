@@ -1,0 +1,31 @@
+question_id;option_index;label
+1;0;L'échelle représente la maison des esprits
+1;1;L'échelle appuyée contre un mur forme un triangle, symbole de la Trinité
+1;2;Passer dessous attire la foudre
+2;0;Un an de malchance
+2;1;Trois mois de mauvaise chance
+2;2;Sept ans de malheur
+3;0;Il annonce du mauvais temps
+3;1;Il était associé aux sorcières
+3;2;Il annonce une mauvaise récolte
+4;0;La patte arrière gauche
+4;1;La patte avant droite
+4;2;N'importe laquelle
+5;0;Le laisser sécher fermé
+5;1;L'ouvrir
+5;2;Le ranger dans l'entrée
+6;0;Entomophobie
+6;1;Myrmécophobie
+6;2;Arachnophobie
+7;0;Arithmophobie
+7;1;Chronophobie
+7;2;Logophobie
+8;0;Claustrophobie
+8;1;Trypophobie
+8;2;Cénophobie
+9;0;Chromatophobie
+9;1;Mélanophobie
+9;2;Xanthophobie
+10;0;Agoraphobie
+10;1;Claustrophobie
+10;2;Topophobie

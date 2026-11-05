@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-load-demo-questions
+      author: maeva-rodrigues
+      context: demo
+      comment: >
+        Questions de démonstration, chargées uniquement avec le context "demo" (profil Spring "local").
+        Les ids sont explicites (les options y font référence) : la séquence est recalée juste après,
+        sinon le premier INSERT sans id (import Batch) entrerait en collision avec id = 1.
+      changes:
+        - loadData:
+            tableName: question
+            file: db/data/demo-questions.csv
+            separator: ;
+            encoding: UTF-8
+            columns:
+              - column: {name: id, type: NUMERIC}
+              - column: {name: category_id, type: NUMERIC}
+              - column: {name: text, type: STRING}
+              - column: {name: correct_option_index, type: NUMERIC}
+        - loadData:
+            tableName: question_option
+            file: db/data/demo-question-options.csv
+            separator: ;
+            encoding: UTF-8
+            columns:
+              - column: {name: question_id, type: NUMERIC}
+              - column: {name: option_index, type: NUMERIC}
+              - column: {name: label, type: STRING}
+        - sql:
+            sql: SELECT setval(pg_get_serial_sequence('question', 'id'), (SELECT max(id) FROM question));
+      rollback:
+        - sql:
+            sql: DELETE FROM question WHERE id BETWEEN 1 AND 10;

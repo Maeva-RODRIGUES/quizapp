@@ -15,12 +15,12 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | | Aujourd'hui |
 |---|---|
 | Langage / framework | Java 21, Spring Boot 4.1 |
-| Données | 10 questions définies en mémoire dans le code |
-| API | `GET /api/questions` : liste de toutes les questions |
-| Tests | démarrage du contexte Spring, test de la couche web (`@WebMvcTest`), exécutés en CI à chaque push |
+| Base de données | PostgreSQL 18, schéma versionné avec Liquibase (catégories, questions, réponses, contraintes de qualité), catégories de référence et 10 questions de démo |
+| API | `GET /api/questions` : liste de toutes les questions (encore servies depuis la mémoire, branchement sur la base en phases 4-5) |
+| Tests | tests unitaires et d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
 
-Limites connues (traitées dans la refonte) : pas encore de bonne réponse stockée ni de calcul de score,
-pas de filtre par catégorie exposé, pas de base de données.
+Limites connues (traitées dans la refonte) : l'API ne lit pas encore la base, pas de calcul de score,
+pas de filtre par catégorie exposé.
 
 ## Stack cible
 
@@ -37,7 +37,7 @@ pas de filtre par catégorie exposé, pas de base de données.
 
 - [x] **Phase 0** : réparer le build, documenter l'état du projet
 - [x] **Phase 1** : passer à Java 21 et à une version maintenue de Spring Boot, nettoyer le contenu des questions, intégration continue
-- [ ] **Phase 2** : PostgreSQL avec Docker Compose et schéma Liquibase
+- [x] **Phase 2** : PostgreSQL avec Docker Compose, schéma et données de référence avec Liquibase
 - [ ] **Phase 3** : modèle de domaine hexagonal et tests unitaires
 - [ ] **Phase 4** : persistance avec jOOQ, tests d'intégration Testcontainers
 - [ ] **Phase 5** : API complète (catégories, questions par catégorie, soumission et score), validation, gestion d'erreurs
@@ -58,8 +58,17 @@ Prérequis :
 # Compiler et lancer les tests
 ./mvnw verify
 
-# Démarrer l'application (port 8080)
-./mvnw spring-boot:run
+# Démarrer l'application (port 8080) avec les questions de démo
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+Le profil `local` ajoute les 10 questions de démonstration en base. Sans lui, seules les catégories
+de référence sont chargées.
+
+Pour explorer la base :
+
+```bash
+docker compose exec postgres psql -U quizapp -d quizapp
 ```
 
 Puis, dans un autre terminal :

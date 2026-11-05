@@ -47,6 +47,15 @@ class LiquibaseSchemaIT {
     }
 
     @Test
+    void withoutLocalProfile_loadsReferenceCategoriesButNoDemoQuestions() {
+        List<String> codes = jdbc.queryForList(
+                "SELECT code FROM category WHERE code <> 'test-cat' ORDER BY id", String.class);
+
+        assertThat(codes).containsExactly("superstitions", "phobies");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM question", Integer.class)).isZero();
+    }
+
+    @Test
     void generatesIdsAndNormalizedTextKey() {
         long questionId = insertQuestion(categoryId, "  Quelle   est la PEUR des clowns ?  ");
 
