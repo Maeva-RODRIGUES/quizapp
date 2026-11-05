@@ -22,66 +22,66 @@ public class QuestionService {
     public List<Question> getAllQuestions() {
         List<Question> questions = new ArrayList<>();
 
-        // Questions pour la catégorie "Superstitions étranges"
-        questions.add(new Question(1L, "Quelle superstition populaire suggère qu'il est malchanceux de passer sous une échelle ?",
-                List.of("a) Parce que cela symbolise un triangle sacré",
-                        "b) Parce que l'échelle représente la maison des esprits",
-                        "c) Parce que cela brise un miroir"),
+        // Catégorie "Superstitions étranges"
+        questions.add(new Question(1L, "Pourquoi dit-on que passer sous une échelle porte malheur ?",
+                List.of("L'échelle représente la maison des esprits",
+                        "L'échelle appuyée contre un mur forme un triangle, symbole de la Trinité",
+                        "Passer dessous attire la foudre"),
                 "Superstitions étranges"));
 
-        questions.add(new Question(2L, "Quel est le superstitieux associé au fait de casser un miroir ?",
-                List.of("a) Sept ans de malheur",
-                        "b) Un an de malchance",
-                        "c) Trois mois de mauvaise chance"),
+        questions.add(new Question(2L, "Selon la superstition, que provoque un miroir cassé ?",
+                List.of("Un an de malchance",
+                        "Trois mois de mauvaise chance",
+                        "Sept ans de malheur"),
                 "Superstitions étranges"));
 
         questions.add(new Question(3L, "Pourquoi dit-on qu'il est malchanceux de croiser un chat noir ?",
-                List.of("a) Parce qu'ils sont associés aux sorcières",
-                        "b) Parce qu'ils portent des esprits malins",
-                        "c) Parce qu'ils annoncent un mauvais temps"),
+                List.of("Il annonce du mauvais temps",
+                        "Il était associé aux sorcières",
+                        "Il annonce une mauvaise récolte"),
                 "Superstitions étranges"));
 
-        questions.add(new Question(4L, "Quelle superstition affirme que trouver une patte de lapin porte chance ?",
-                List.of("a) L'origine est dans les croyances médiévales",
-                        "b) C'est une coutume des anciens Égyptiens",
-                        "c) C'est lié aux cérémonies druidiques"),
+        questions.add(new Question(4L, "Selon la tradition populaire américaine, quelle patte de lapin porte chance ?",
+                List.of("La patte arrière gauche",
+                        "La patte avant droite",
+                        "N'importe laquelle"),
                 "Superstitions étranges"));
 
-        questions.add(new Question(5L, "Quelle est l'origine de la superstition selon laquelle on ne doit pas ouvrir un parapluie à l'intérieur ?",
-                List.of("a) Cela attire la pluie",
-                        "b) Cela est lié aux esprits maléfiques",
-                        "c) Cela porte malheur selon les traditions anciennes"),
+        questions.add(new Question(5L, "Selon la superstition, que ne faut-il pas faire avec un parapluie dans une maison ?",
+                List.of("Le laisser sécher fermé",
+                        "L'ouvrir",
+                        "Le ranger dans l'entrée"),
                 "Superstitions étranges"));
 
-        // Questions pour la catégorie "Phobies étranges"
-        questions.add(new Question(6L, "Quelle est la phobie des araignées ?",
-                List.of("a) Arachnophobie",
-                        "b) Entomophobie",
-                        "c) Myrmécophobie"),
+        // Catégorie "Phobies étranges"
+        questions.add(new Question(6L, "Quel est le nom de la peur des araignées ?",
+                List.of("Entomophobie",
+                        "Myrmécophobie",
+                        "Arachnophobie"),
                 "Phobies étranges"));
 
-        questions.add(new Question(7L, "Quel est le terme pour la peur irrationnelle des chiffres ?",
-                List.of("a) Numerophobie",
-                        "b) Arithmophobie",
-                        "c) Digitophobie"),
+        questions.add(new Question(7L, "Comment appelle-t-on la peur irrationnelle des nombres ?",
+                List.of("Arithmophobie",
+                        "Chronophobie",
+                        "Logophobie"),
                 "Phobies étranges"));
 
-        questions.add(new Question(8L, "Comment appelle-t-on la peur des trous ou des motifs répétitifs ?",
-                List.of("a) Trépanophobie",
-                        "b) Trypophobie",
-                        "c) Clastophobie"),
+        questions.add(new Question(8L, "Comment appelle-t-on la peur ou le dégoût des amas de petits trous ?",
+                List.of("Claustrophobie",
+                        "Trypophobie",
+                        "Cénophobie"),
                 "Phobies étranges"));
 
-        questions.add(new Question(9L, "Quelle phobie est associée à la peur de la couleur jaune ?",
-                List.of("a) Xanthophobie",
-                        "b) Chromatophobie",
-                        "c) Melanophobie"),
+        questions.add(new Question(9L, "Quelle phobie désigne la peur de la couleur jaune ?",
+                List.of("Chromatophobie",
+                        "Mélanophobie",
+                        "Xanthophobie"),
                 "Phobies étranges"));
 
-        questions.add(new Question(10L, "Quel est le nom de la phobie des ouvertures ou des espaces ouverts ?",
-                List.of("a) Claustrophobie",
-                        "b) Agoraphobie",
-                        "c) Topophobie"),
+        questions.add(new Question(10L, "Comment appelle-t-on la peur des grands espaces ouverts et de la foule ?",
+                List.of("Agoraphobie",
+                        "Claustrophobie",
+                        "Topophobie"),
                 "Phobies étranges"));
 
         return questions;

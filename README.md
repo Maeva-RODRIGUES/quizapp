@@ -68,8 +68,8 @@ Exemple de réponse (extrait) :
 [
   {
     "id": 6,
-    "questionText": "Quelle est la phobie des araignées ?",
-    "options": ["a) Arachnophobie", "b) Entomophobie", "c) Myrmécophobie"],
+    "questionText": "Quel est le nom de la peur des araignées ?",
+    "options": ["Entomophobie", "Myrmécophobie", "Arachnophobie"],
     "category": "Phobies étranges"
   }
 ]
