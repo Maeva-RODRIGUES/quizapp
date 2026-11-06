@@ -15,7 +15,7 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | | Aujourd'hui |
 |---|---|
 | Langage / framework | Java 21, Spring Boot 4.1 |
-| Base de données | PostgreSQL 18, schéma versionné avec Liquibase (catégories, questions, réponses, contraintes de qualité), catégories de référence et 10 questions de démo |
+| Base de données | PostgreSQL 18, schéma versionné avec Liquibase (catégories, questions, réponses, contraintes de qualité), catégories de référence et 10 questions de démo, tables de suivi Spring Batch et rapport des lignes rejetées à l'import (préparés pour l'import CSV) |
 | Domaine | modèle métier en Java pur (questions, catégories, correction et score), cas d'usage et ports, sans dépendance au framework |
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
 | API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`) sans jamais exposer la bonne réponse, `POST /api/quiz/submit` (score et correction), entrées validées, erreurs au format standard *Problem Details* (RFC 9457) |

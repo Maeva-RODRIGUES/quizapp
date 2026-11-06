@@ -47,6 +47,63 @@ class LiquibaseSchemaIT {
     }
 
     @Test
+    void createsSpringBatchMetadataTablesAndImportRejection() {
+        List<String> tables = jdbc.queryForList(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'", String.class);
+
+        assertThat(tables).contains("batch_job_instance", "batch_job_execution", "batch_job_execution_params",
+                "batch_step_execution", "batch_step_execution_context", "batch_job_execution_context",
+                "import_rejection");
+    }
+
+    @Test
+    void storesRejectionLinkedToAJobExecution() {
+        long executionId = insertJobExecution();
+
+        jdbc.update("INSERT INTO import_rejection (job_execution_id, line_number, raw_line, reason) VALUES (?, 3, 'phobies;;A;B;;;1', 'EMPTY_TEXT')",
+                executionId);
+
+        assertThat(jdbc.queryForObject("SELECT created_at IS NOT NULL FROM import_rejection WHERE job_execution_id = ?",
+                Boolean.class, executionId)).isTrue();
+    }
+
+    @Test
+    void rejectsRejectionOfUnknownJobExecution() {
+        assertThatThrownBy(() -> insertRejection(999_999L, 2, "EMPTY_TEXT"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("fk_import_rejection_job_execution");
+    }
+
+    @Test
+    void rejectsNonPositiveLineNumber() {
+        long executionId = insertJobExecution();
+
+        assertThatThrownBy(() -> insertRejection(executionId, 0, "EMPTY_TEXT"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_import_rejection_line_number");
+    }
+
+    @Test
+    void rejectsReasonThatIsNotAnUpperSnakeCaseCode() {
+        long executionId = insertJobExecution();
+
+        assertThatThrownBy(() -> insertRejection(executionId, 2, "texte vide"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_import_rejection_reason_format");
+    }
+
+    @Test
+    void deletesRejectionsWithTheirJobExecution() {
+        long executionId = insertJobExecution();
+        insertRejection(executionId, 2, "EMPTY_TEXT");
+
+        jdbc.update("DELETE FROM batch_job_execution WHERE job_execution_id = ?", executionId);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM import_rejection WHERE job_execution_id = ?",
+                Integer.class, executionId)).isZero();
+    }
+
+    @Test
     void withoutLocalProfile_loadsReferenceCategoriesButNoDemoQuestions() {
         List<String> codes = jdbc.queryForList(
                 "SELECT code FROM category WHERE code <> 'test-cat' ORDER BY id", String.class);
@@ -115,6 +172,22 @@ class LiquibaseSchemaIT {
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM question_option WHERE question_id = ?", Integer.class, questionId))
                 .isZero();
+    }
+
+    /** Crée une instance et une exécution de job minimales, comme le ferait Spring Batch. */
+    private long insertJobExecution() {
+        long instanceId = jdbc.queryForObject("SELECT nextval('batch_job_instance_seq')", Long.class);
+        jdbc.update("INSERT INTO batch_job_instance (job_instance_id, version, job_name, job_key) VALUES (?, 0, 'test-job', md5(?::text))",
+                instanceId, instanceId);
+        long executionId = jdbc.queryForObject("SELECT nextval('batch_job_execution_seq')", Long.class);
+        jdbc.update("INSERT INTO batch_job_execution (job_execution_id, version, job_instance_id, create_time) VALUES (?, 0, ?, now())",
+                executionId, instanceId);
+        return executionId;
+    }
+
+    private void insertRejection(long executionId, int lineNumber, String reason) {
+        jdbc.update("INSERT INTO import_rejection (job_execution_id, line_number, raw_line, reason) VALUES (?, ?, 'ligne', ?)",
+                executionId, lineNumber, reason);
     }
 
     private long insertQuestion(long categoryId, String text) {

@@ -14,3 +14,9 @@ databaseChangeLog:
   - include:
       file: changes/004-load-demo-questions.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/005-spring-batch-schema.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/006-create-import-rejection.yaml
+      relativeToChangelogFile: true

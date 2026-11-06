@@ -35,6 +35,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-batch-jdbc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
 		<dependency>
@@ -155,7 +159,7 @@
 										<inputSchema>public</inputSchema>
 										<includes>.*</includes>
 										<!-- Tables techniques de Liquibase : pas de code à générer. -->
-										<excludes>databasechangelog|databasechangeloglock</excludes>
+										<excludes>databasechangelog|databasechangeloglock|batch_.*</excludes>
 									</database>
 									<target>
 										<packageName>io.github.maevarodrigues.quizapp.adapters.out.persistence.jooq</packageName>

@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-spring-batch-schema
+      author: maeva-rodrigues
+      comment: >
+        Tables de métadonnées de Spring Batch (instances, exécutions, compteurs, contextes de reprise).
+        Script officiel copié dans le dépôt : Liquibase reste l'unique propriétaire du schéma,
+        et le contenu de ce changeset ne change pas en cas de montée de version de Spring Batch.
+      changes:
+        - sqlFile:
+            path: ../sql/005-spring-batch-6.0-schema-postgresql.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sqlFile:
+            path: ../sql/005-spring-batch-6.0-schema-drop-postgresql.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true

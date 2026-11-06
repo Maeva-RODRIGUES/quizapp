@@ -1,0 +1,73 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-import-rejection
+      author: maeva-rodrigues
+      comment: Rapport des lignes rejetées par l'import CSV (une ligne par motif de rejet).
+      changes:
+        - createTable:
+            tableName: import_rejection
+            remarks: Lignes du fichier importé refusées par les règles de qualité
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_import_rejection
+              - column:
+                  name: job_execution_id
+                  type: BIGINT
+                  remarks: Exécution Spring Batch (import) qui a rejeté la ligne
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_import_rejection_job_execution
+                    references: batch_job_execution(job_execution_id)
+                    deleteCascade: true
+              - column:
+                  name: line_number
+                  type: INT
+                  remarks: Numéro de ligne dans le fichier source (l'en-tête est la ligne 1)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: raw_line
+                  type: TEXT
+                  remarks: Ligne telle que lue dans le fichier, pour la retrouver et la corriger
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: VARCHAR(50)
+                  remarks: Motif du rejet (ex. TOO_FEW_OPTIONS)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: import_rejection
+            indexName: ix_import_rejection_job_execution
+            columns:
+              - column:
+                  name: job_execution_id
+
+  - changeSet:
+      id: 006-import-rejection-check-constraints
+      author: maeva-rodrigues
+      comment: Règles de qualité sur le rapport de rejets.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE import_rejection ADD CONSTRAINT ck_import_rejection_line_number
+                  CHECK (line_number > 0);
+              ALTER TABLE import_rejection ADD CONSTRAINT ck_import_rejection_reason_format
+                  CHECK (reason ~ '^[A-Z]+(_[A-Z]+)*$');
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE import_rejection DROP CONSTRAINT ck_import_rejection_reason_format;
+              ALTER TABLE import_rejection DROP CONSTRAINT ck_import_rejection_line_number;
