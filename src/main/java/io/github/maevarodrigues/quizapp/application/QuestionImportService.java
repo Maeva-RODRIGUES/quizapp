@@ -51,4 +51,9 @@ public class QuestionImportService implements ImportQuestionsUseCase {
             rejectionRepository.saveAll(rejections);
         }
     }
+
+    @Override
+    public List<ImportRejection> findRejections(long importId) {
+        return rejectionRepository.findByImportId(importId);
+    }
 }

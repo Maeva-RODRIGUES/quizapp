@@ -22,4 +22,7 @@ public interface ImportQuestionsUseCase {
     List<Question> importQuestions(List<Question> questions);
 
     void recordRejections(List<ImportRejection> rejections);
+
+    /** Les rejets enregistrés pour un import, triés par numéro de ligne. */
+    List<ImportRejection> findRejections(long importId);
 }

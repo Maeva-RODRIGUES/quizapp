@@ -10,4 +10,7 @@ import java.util.List;
 public interface ImportRejectionRepository {
 
     void saveAll(List<ImportRejection> rejections);
+
+    /** Les rejets d'un import, triés par numéro de ligne puis par ordre d'enregistrement. */
+    List<ImportRejection> findByImportId(long importId);
 }

@@ -2,6 +2,7 @@ package io.github.maevarodrigues.quizapp.adapters.in.web;
 
 import io.github.maevarodrigues.quizapp.domain.exception.InvalidSubmissionException;
 import io.github.maevarodrigues.quizapp.domain.exception.UnknownCategoryException;
+import io.github.maevarodrigues.quizapp.domain.exception.UnknownImportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -37,6 +38,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(UnknownCategoryException.class)
     ProblemDetail handleUnknownCategory(UnknownCategoryException exception) {
         return problem(HttpStatus.NOT_FOUND, "Unknown category", exception.getMessage());
+    }
+
+    @ExceptionHandler(UnknownImportException.class)
+    ProblemDetail handleUnknownImport(UnknownImportException exception) {
+        return problem(HttpStatus.NOT_FOUND, "Unknown import", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidSubmissionException.class)

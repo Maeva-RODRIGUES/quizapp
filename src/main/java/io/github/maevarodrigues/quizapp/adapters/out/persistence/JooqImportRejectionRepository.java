@@ -3,6 +3,7 @@ package io.github.maevarodrigues.quizapp.adapters.out.persistence;
 import io.github.maevarodrigues.quizapp.domain.model.ImportRejection;
 import io.github.maevarodrigues.quizapp.domain.port.out.ImportRejectionRepository;
 import org.jooq.DSLContext;
+import org.jooq.Records;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -34,5 +35,15 @@ public class JooqImportRejectionRepository implements ImportRejectionRepository 
             insert = insert.values(rejection.importId(), rejection.lineNumber(), rejection.rawLine(), rejection.reason());
         }
         insert.execute();
+    }
+
+    @Override
+    public List<ImportRejection> findByImportId(long importId) {
+        return dsl.select(IMPORT_REJECTION.JOB_EXECUTION_ID, IMPORT_REJECTION.LINE_NUMBER,
+                        IMPORT_REJECTION.RAW_LINE, IMPORT_REJECTION.REASON)
+                .from(IMPORT_REJECTION)
+                .where(IMPORT_REJECTION.JOB_EXECUTION_ID.eq(importId))
+                .orderBy(IMPORT_REJECTION.LINE_NUMBER, IMPORT_REJECTION.ID)
+                .fetch(Records.mapping(ImportRejection::new));
     }
 }

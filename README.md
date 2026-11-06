@@ -19,9 +19,10 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | Domaine | modèle métier en Java pur (questions, catégories, correction et score), cas d'usage et ports, sans dépendance au framework |
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
 | API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`) sans jamais exposer la bonne réponse, `POST /api/quiz/submit` (score et correction), entrées validées, erreurs au format standard *Problem Details* (RFC 9457) |
+| Import de données | `POST /api/imports` : job Spring Batch d'import CSV avec règles de qualité (validation, dédoublonnage), rapport des lignes rejetées et compteurs |
 | Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
 
-Prochaine étape : l'import de questions depuis un fichier CSV (Spring Batch), avec règles de qualité des données.
+Prochaine étape : l'import asynchrone (réponse immédiate, puis suivi de l'avancement).
 
 ## Architecture
 
@@ -103,6 +104,8 @@ docker compose exec postgres psql -U quizapp -d quizapp
 | `GET` | `/api/questions` | toutes les questions |
 | `GET` | `/api/questions?category=phobies` | questions d'une catégorie (par son code) |
 | `POST` | `/api/quiz/submit` | corrige les réponses au quiz d'une catégorie |
+| `POST` | `/api/imports` | importe un fichier CSV de questions (voir [Import et qualité des données](#import-et-qualité-des-données)) |
+| `GET` | `/api/imports/{id}/rejections` | lignes rejetées par un import, avec leur motif |
 
 Les questions sont renvoyées **sans la bonne réponse** : elle n'est révélée qu'après soumission.
 
@@ -163,7 +166,8 @@ Toutes les erreurs suivent le format *Problem Details* (RFC 9457, `Content-Type:
 |---|---|
 | requête invalide (champ manquant, index négatif, JSON illisible…) | `400`, avec la liste des champs en cause dans `errors` |
 | soumission incohérente (question hors du quiz, réponse inexistante) | `400` |
-| catégorie inconnue, route inexistante | `404` |
+| catégorie ou import inconnu, route inexistante | `404` |
+| fichier d'import inexploitable (en-tête incorrect) | `422`, avec le bilan de l'import (`status: FAILED`) |
 | `Content-Type` autre que JSON | `415` |
 | erreur inattendue | `500`, sans détail technique (la cause est dans les logs) |
 
@@ -200,3 +204,57 @@ curl -s -X POST http://localhost:8080/api/quiz/submit \
 ```
 
 Les messages de validation sont traduits selon l'en-tête `Accept-Language` (par défaut, la langue du serveur).
+
+## Import et qualité des données
+
+L'import de questions est un **job Spring Batch** : le fichier est lu ligne par ligne, chaque ligne passe
+des **règles de qualité**, et les questions valides sont écrites en base par paquets de 100, chacun dans une transaction.
+Une ligne invalide n'arrête pas l'import : elle est **rejetée**, et consignée avec son numéro, son contenu et son motif.
+
+Format attendu (UTF-8, séparateur `;`, en-tête obligatoire, de 2 à 4 réponses, bonne réponse numérotée **à partir de 1**) :
+
+```
+category;question;option_1;option_2;option_3;option_4;correct_option
+phobies;Comment appelle-t-on la peur des clowns ?;Coulrophobie;Clinophobie;Cynophobie;;1
+```
+
+| Motif | Règle |
+|---|---|
+| `MALFORMED_LINE` | la ligne n'a pas exactement 7 colonnes |
+| `UNKNOWN_CATEGORY` | la catégorie n'existe pas dans le référentiel |
+| `EMPTY_TEXT` / `TEXT_TOO_LONG` | énoncé vide / de plus de 500 caractères |
+| `TOO_FEW_OPTIONS` | moins de 2 réponses |
+| `OPTIONS_NOT_CONTIGUOUS` | colonne de réponse vide suivie d'une réponse remplie |
+| `OPTION_TOO_LONG` / `DUPLICATE_OPTIONS` | réponse de plus de 200 caractères / deux réponses identiques |
+| `CORRECT_OPTION_NOT_A_NUMBER` / `CORRECT_OPTION_OUT_OF_RANGE` | numéro de bonne réponse illisible / sans réponse correspondante |
+| `DUPLICATE_IN_FILE` | même question plus haut dans le fichier (casse et espaces ignorés) |
+| `ALREADY_EXISTS` | même question déjà en base |
+
+Une ligne peut être rejetée pour plusieurs motifs à la fois. Un en-tête incorrect fait échouer tout l'import (`422`).
+
+Essai avec le fichier d'exemple [`samples/questions-import.csv`](samples/questions-import.csv), qui contient des erreurs volontaires :
+
+```bash
+curl -s -F file=@samples/questions-import.csv http://localhost:8080/api/imports
+```
+
+```json
+{"executionId": 1, "status": "COMPLETED", "read": 12, "written": 5, "rejected": 7}
+```
+
+```bash
+curl -s http://localhost:8080/api/imports/1/rejections
+```
+
+```json
+[
+  {"lineNumber": 7, "reason": "ALREADY_EXISTS", "rawLine": "phobies;QUEL est le nom de la peur des araignées ?;Arachnophobie;Entomophobie;;;1"},
+  {"lineNumber": 8, "reason": "UNKNOWN_CATEGORY", "rawLine": "astrologie;Quel est l'élément du signe du Bélier ?;Feu;Eau;Air;Terre;1"},
+  {"lineNumber": 12, "reason": "MALFORMED_LINE", "rawLine": "phobies;Ligne incomplète;Oui;Non"}
+]
+```
+
+(extrait ; réimporter le même fichier n'écrit rien : toutes les lignes valides sont alors `ALREADY_EXISTS`)
+
+L'exécution est **synchrone** : la réponse arrive une fois le fichier entièrement traité.
+Chaque import est tracé dans les tables de Spring Batch (`batch_job_execution`…) et son rapport dans `import_rejection`.
