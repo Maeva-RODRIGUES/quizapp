@@ -30,7 +30,7 @@ class CategoryControllerTest {
                 new Category(1L, "superstitions", "Superstitions étranges"),
                 new Category(2L, "phobies", "Phobies étranges")));
 
-        mockMvc.perform(get("https://gh.ali360.cloudns.ch/api/categories"))
+        mockMvc.perform(get("/api/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].code").value("superstitions"))

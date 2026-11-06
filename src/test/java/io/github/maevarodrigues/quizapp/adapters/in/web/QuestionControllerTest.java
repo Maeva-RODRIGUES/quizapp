@@ -1,5 +1,6 @@
 package io.github.maevarodrigues.quizapp.adapters.in.web;
 
+import io.github.maevarodrigues.quizapp.domain.exception.UnknownCategoryException;
 import io.github.maevarodrigues.quizapp.domain.model.Question;
 import io.github.maevarodrigues.quizapp.domain.port.in.GetQuizQuestionsUseCase;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasToString;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -39,7 +41,7 @@ class QuestionControllerTest {
     void withoutCategory_returnsAllQuestions() throws Exception {
         given(getQuizQuestions.getAllQuestions()).willReturn(List.of(ARAIGNEES));
 
-        mockMvc.perform(get("https://gh.ali360.cloudns.ch/api/questions"))
+        mockMvc.perform(get("/api/questions"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.length()").value(1))
@@ -54,7 +56,7 @@ class QuestionControllerTest {
     void withCategory_returnsQuestionsOfThatCategory() throws Exception {
         given(getQuizQuestions.getQuestionsByCategory("phobies")).willReturn(List.of(ARAIGNEES));
 
-        mockMvc.perform(get("https://gh.ali360.cloudns.ch/api/questions").param("category", "phobies"))
+        mockMvc.perform(get("/api/questions").param("category", "phobies"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(6));
     }
@@ -63,8 +65,21 @@ class QuestionControllerTest {
     void neverExposesTheCorrectAnswer() throws Exception {
         given(getQuizQuestions.getAllQuestions()).willReturn(List.of(ARAIGNEES));
 
-        mockMvc.perform(get("https://gh.ali360.cloudns.ch/api/questions"))
+        mockMvc.perform(get("/api/questions"))
                 .andExpect(jsonPath("$[0].correctOptionIndex").doesNotExist())
                 .andExpect(jsonPath("$[0].correctOption").doesNotExist());
+    }
+
+    @Test
+    void unknownCategory_returns404ProblemDetail() throws Exception {
+        given(getQuizQuestions.getQuestionsByCategory("inconnue")).willThrow(new UnknownCategoryException("inconnue"));
+
+        mockMvc.perform(get("/api/questions").param("category", "inconnue"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.title").value("Unknown category"))
+                .andExpect(jsonPath("$.detail").value("unknown category: inconnue"))
+                .andExpect(jsonPath("$.instance").value(hasToString("/api/questions")));
     }
 }

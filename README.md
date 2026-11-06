@@ -1,6 +1,6 @@
 # quizapp
 
-[![CI](https://gh.ali360.cloudns.ch/Maeva-RODRIGUES/quizapp/actions/workflows/ci.yml/badge.svg)](https://gh.ali360.cloudns.ch/Maeva-RODRIGUES/quizapp/actions/workflows/ci.yml)
+[![CI](https://github.com/Maeva-RODRIGUES/quizapp/actions/workflows/ci.yml/badge.svg)](https://github.com/Maeva-RODRIGUES/quizapp/actions/workflows/ci.yml)
 
 API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 **Superstitions étranges** et **Phobies étranges**.
@@ -18,11 +18,10 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | Base de données | PostgreSQL 18, schéma versionné avec Liquibase (catégories, questions, réponses, contraintes de qualité), catégories de référence et 10 questions de démo |
 | Domaine | modèle métier en Java pur (questions, catégories, correction et score), cas d'usage et ports, sans dépendance au framework |
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
-| API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`) sans jamais exposer la bonne réponse, `POST /api/quiz/submit` (score et correction), entrées validées |
+| API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`) sans jamais exposer la bonne réponse, `POST /api/quiz/submit` (score et correction), entrées validées, erreurs au format standard *Problem Details* (RFC 9457) |
 | Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
 
-Limites connues (traitées dans la refonte) : pas encore de gestion centralisée des erreurs (une catégorie
-inconnue renvoie pour l'instant une erreur 500, et les erreurs 400 ne détaillent pas le champ en cause).
+Prochaine étape : l'import de questions depuis un fichier CSV (Spring Batch), avec règles de qualité des données.
 
 ## Architecture
 
@@ -63,7 +62,7 @@ io.github.maevarodrigues.quizapp
 - [x] **Phase 2** : PostgreSQL avec Docker Compose, schéma et données de référence avec Liquibase
 - [x] **Phase 3** : modèle de domaine hexagonal, tests unitaires et règles d'architecture
 - [x] **Phase 4** : persistance avec jOOQ, tests d'intégration Testcontainers
-- [ ] **Phase 5** : API complète (catégories, questions par catégorie, soumission et score), validation, gestion d'erreurs
+- [x] **Phase 5** : API complète (catégories, questions par catégorie, soumission et score), validation, gestion d'erreurs
 - [ ] **Phase 6** : job Spring Batch d'import CSV avec règles de qualité des données
 - [ ] **Phase 7** : Dockerfile, intégration continue, SonarCloud
 - [ ] **Phase 8** : documentation finale
@@ -155,3 +154,49 @@ curl -s -X POST http://localhost:8080/api/quiz/submit \
 ```
 
 (extrait : une correction par question de la catégorie)
+
+### Erreurs
+
+Toutes les erreurs suivent le format *Problem Details* (RFC 9457, `Content-Type: application/problem+json`) :
+
+| Cas | Statut |
+|---|---|
+| requête invalide (champ manquant, index négatif, JSON illisible…) | `400`, avec la liste des champs en cause dans `errors` |
+| soumission incohérente (question hors du quiz, réponse inexistante) | `400` |
+| catégorie inconnue, route inexistante | `404` |
+| `Content-Type` autre que JSON | `415` |
+| erreur inattendue | `500`, sans détail technique (la cause est dans les logs) |
+
+```bash
+curl -s "http://localhost:8080/api/questions?category=inconnue"
+```
+
+```json
+{
+  "title": "Unknown category",
+  "status": 404,
+  "detail": "unknown category: inconnue",
+  "instance": "/api/questions"
+}
+```
+
+```bash
+curl -s -X POST http://localhost:8080/api/quiz/submit \
+  -H 'Content-Type: application/json' \
+  -d '{"category": " ", "answers": {}}'
+```
+
+```json
+{
+  "title": "Invalid request",
+  "status": 400,
+  "detail": "The request contains invalid fields.",
+  "instance": "/api/quiz/submit",
+  "errors": [
+    {"field": "answers", "message": "must not be empty"},
+    {"field": "category", "message": "must not be blank"}
+  ]
+}
+```
+
+Les messages de validation sont traduits selon l'en-tête `Accept-Language` (par défaut, la langue du serveur).

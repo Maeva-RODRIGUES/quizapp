@@ -35,14 +35,14 @@ class QuizApiIT {
 
     @Test
     void getCategories_readsTheReferenceCategoriesFromTheDatabase() throws Exception {
-        mockMvc.perform(get("https://gh.ali360.cloudns.ch/api/categories"))
+        mockMvc.perform(get("/api/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].code").value(contains("superstitions", "phobies")));
     }
 
     @Test
     void getQuestions_readsTheTenDemoQuestionsFromTheDatabase() throws Exception {
-        mockMvc.perform(get("https://gh.ali360.cloudns.ch/api/questions"))
+        mockMvc.perform(get("/api/questions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(10))
                 .andExpect(jsonPath("$[5].text").value("Quel est le nom de la peur des araignées ?"))
@@ -51,7 +51,7 @@ class QuizApiIT {
 
     @Test
     void getQuestionsByCategory_filtersOnTheCategoryCode() throws Exception {
-        mockMvc.perform(get("https://gh.ali360.cloudns.ch/api/questions").param("category", "phobies"))
+        mockMvc.perform(get("/api/questions").param("category", "phobies"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(5))
                 .andExpect(jsonPath("$[*].category").value(everyItem(is("phobies"))));
@@ -60,7 +60,7 @@ class QuizApiIT {
     @Test
     void submitQuiz_allCorrect_scoresFiveOutOfFive() throws Exception {
         // Bonnes réponses des phobies de démo : 6 → 2, 7 → 0, 8 → 1, 9 → 2, 10 → 0
-        mockMvc.perform(post("https://gh.ali360.cloudns.ch/api/quiz/submit").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/api/quiz/submit").contentType(MediaType.APPLICATION_JSON).content("""
                         {"category": "phobies", "answers": {"6": 2, "7": 0, "8": 1, "9": 2, "10": 0}}
                         """))
                 .andExpect(status().isOk())
@@ -70,7 +70,7 @@ class QuizApiIT {
 
     @Test
     void submitQuiz_partialAnswers_countsUnansweredQuestionsInTheTotal() throws Exception {
-        mockMvc.perform(post("https://gh.ali360.cloudns.ch/api/quiz/submit").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/api/quiz/submit").contentType(MediaType.APPLICATION_JSON).content("""
                         {"category": "phobies", "answers": {"6": 2, "7": 1}}
                         """))
                 .andExpect(status().isOk())
@@ -82,8 +82,34 @@ class QuizApiIT {
     }
 
     @Test
+    void getQuestions_unknownCategory_returns404ProblemDetail() throws Exception {
+        mockMvc.perform(get("/api/questions").param("category", "inconnue"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("unknown category: inconnue"));
+    }
+
+    @Test
+    void submitQuiz_questionFromAnotherCategory_returns400() throws Exception {
+        // la question 1 est une superstition : elle ne fait pas partie du quiz des phobies
+        mockMvc.perform(post("/api/quiz/submit").contentType(MediaType.APPLICATION_JSON).content("""
+                        {"category": "phobies", "answers": {"1": 0}}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Invalid submission"));
+    }
+
+    @Test
+    void unknownRoute_returns404ProblemDetail() throws Exception {
+        mockMvc.perform(get("/api/inexistant"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
+    @Test
     void responsesNeverContainTheCorrectAnswer() throws Exception {
-        mockMvc.perform(get("https://gh.ali360.cloudns.ch/api/questions"))
+        mockMvc.perform(get("/api/questions"))
                 .andExpect(content().string(not(containsStringIgnoringCase("correct"))));
     }
 }

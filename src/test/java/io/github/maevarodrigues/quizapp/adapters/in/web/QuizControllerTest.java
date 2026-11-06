@@ -1,5 +1,7 @@
 package io.github.maevarodrigues.quizapp.adapters.in.web;
 
+import io.github.maevarodrigues.quizapp.domain.exception.InvalidSubmissionException;
+import io.github.maevarodrigues.quizapp.domain.exception.UnknownCategoryException;
 import io.github.maevarodrigues.quizapp.domain.model.QuestionCorrection;
 import io.github.maevarodrigues.quizapp.domain.model.QuizResult;
 import io.github.maevarodrigues.quizapp.domain.model.QuizSubmission;
@@ -18,12 +20,18 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,7 +45,7 @@ class QuizControllerTest {
     private SubmitQuizUseCase submitQuiz;
 
     private ResultActions submit(String json) throws Exception {
-        return mockMvc.perform(post("https://gh.ali360.cloudns.ch/api/quiz/submit").contentType(MediaType.APPLICATION_JSON).content(json));
+        return mockMvc.perform(post("/api/quiz/submit").contentType(MediaType.APPLICATION_JSON).content(json));
     }
 
     @Test
@@ -86,8 +94,84 @@ class QuizControllerTest {
 
         @Test
         void wrongContentType_isRejectedWith415() throws Exception {
-            mockMvc.perform(post("https://gh.ali360.cloudns.ch/api/quiz/submit").contentType(MediaType.TEXT_PLAIN).content("phobies"))
-                    .andExpect(status().isUnsupportedMediaType());
+            mockMvc.perform(post("/api/quiz/submit").contentType(MediaType.TEXT_PLAIN).content("phobies"))
+                    .andExpect(status().isUnsupportedMediaType())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+        }
+
+        @Test
+        void validationErrors_listEveryInvalidField() throws Exception {
+            submit("""
+                    {"category": " ", "answers": {}}
+                    """)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Invalid request"))
+                    .andExpect(jsonPath("$.errors.length()").value(2))
+                    .andExpect(jsonPath("$.errors[*].field").value(contains("answers", "category")))
+                    .andExpect(jsonPath("$.errors[0].message").isNotEmpty());
+        }
+
+        @Test
+        void negativeAnswer_namesTheAnswerInError() throws Exception {
+            submit("""
+                    {"category": "phobies", "answers": {"6": -1}}
+                    """)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors[0].field").value(startsWith("answers")))
+                    .andExpect(jsonPath("$.errors[0].field").value(containsString("6")));
+        }
+
+        @Test
+        void malformedJson_returnsProblemDetailWithoutParserInternals() throws Exception {
+            submit("{\"category\": ")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(content().string(not(containsString("jackson"))));
+        }
+    }
+
+    @Nested
+    class DomainErrors {
+
+        @Test
+        void unknownCategory_returns404() throws Exception {
+            given(submitQuiz.submitQuiz(eq("inconnue"), any())).willThrow(new UnknownCategoryException("inconnue"));
+
+            submit("""
+                    {"category": "inconnue", "answers": {"6": 2}}
+                    """)
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.detail").value("unknown category: inconnue"));
+        }
+
+        @Test
+        void inconsistentSubmission_returns400() throws Exception {
+            given(submitQuiz.submitQuiz(eq("phobies"), any()))
+                    .willThrow(new InvalidSubmissionException("question 1 is not part of this quiz"));
+
+            submit("""
+                    {"category": "phobies", "answers": {"1": 0}}
+                    """)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.title").value("Invalid submission"))
+                    .andExpect(jsonPath("$.detail").value("question 1 is not part of this quiz"));
+        }
+
+        @Test
+        void unexpectedError_returns500WithoutLeakingInternals() throws Exception {
+            given(submitQuiz.submitQuiz(anyString(), any()))
+                    .willThrow(new IllegalStateException("connection refused: db-host:5432"));
+
+            submit("""
+                    {"category": "phobies", "answers": {"6": 2}}
+                    """)
+                    .andExpect(status().isInternalServerError())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.detail").value("An unexpected error occurred."))
+                    .andExpect(content().string(not(containsString("db-host"))))
+                    .andExpect(content().string(not(containsString("IllegalStateException"))));
         }
     }
 }
