@@ -19,10 +19,13 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | Domaine | modèle métier en Java pur (questions, catégories, correction et score), cas d'usage et ports, sans dépendance au framework |
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
 | API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`) sans jamais exposer la bonne réponse, `POST /api/quiz/submit` (score et correction), entrées validées, erreurs au format standard *Problem Details* (RFC 9457) |
-| Import de données | `POST /api/imports` : job Spring Batch d'import CSV avec règles de qualité (validation, dédoublonnage), rapport des lignes rejetées et compteurs |
+| Import de données | `POST /api/imports` : job Spring Batch d'import CSV **asynchrone** avec règles de qualité (validation, dédoublonnage), suivi de l'avancement, rapport des lignes rejetées et compteurs |
 | Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
 
-Prochaine étape : l'import asynchrone (réponse immédiate, puis suivi de l'avancement).
+Limites connues : un import interrompu par un arrêt brutal de l'application reste au statut `STARTED`
+(pas encore de reprise ni de nettoyage automatique de ces exécutions).
+
+Prochaine étape : image Docker de l'application, enrichissement de la CI et analyse de qualité SonarCloud.
 
 ## Architecture
 
@@ -64,7 +67,7 @@ io.github.maevarodrigues.quizapp
 - [x] **Phase 3** : modèle de domaine hexagonal, tests unitaires et règles d'architecture
 - [x] **Phase 4** : persistance avec jOOQ, tests d'intégration Testcontainers
 - [x] **Phase 5** : API complète (catégories, questions par catégorie, soumission et score), validation, gestion d'erreurs
-- [ ] **Phase 6** : job Spring Batch d'import CSV avec règles de qualité des données
+- [x] **Phase 6** : job Spring Batch d'import CSV avec règles de qualité des données
 - [ ] **Phase 7** : Dockerfile, intégration continue, SonarCloud
 - [ ] **Phase 8** : documentation finale
 - [ ] **Bonus** : front Angular minimal, déploiement AWS décrit en Terraform
@@ -104,7 +107,8 @@ docker compose exec postgres psql -U quizapp -d quizapp
 | `GET` | `/api/questions` | toutes les questions |
 | `GET` | `/api/questions?category=phobies` | questions d'une catégorie (par son code) |
 | `POST` | `/api/quiz/submit` | corrige les réponses au quiz d'une catégorie |
-| `POST` | `/api/imports` | importe un fichier CSV de questions (voir [Import et qualité des données](#import-et-qualité-des-données)) |
+| `POST` | `/api/imports` | lance l'import d'un fichier CSV de questions, en arrière-plan (voir [Import et qualité des données](#import-et-qualité-des-données)) |
+| `GET` | `/api/imports/{id}` | état d'un import : statut, dates, compteurs |
 | `GET` | `/api/imports/{id}/rejections` | lignes rejetées par un import, avec leur motif |
 
 Les questions sont renvoyées **sans la bonne réponse** : elle n'est révélée qu'après soumission.
@@ -167,7 +171,6 @@ Toutes les erreurs suivent le format *Problem Details* (RFC 9457, `Content-Type:
 | requête invalide (champ manquant, index négatif, JSON illisible…) | `400`, avec la liste des champs en cause dans `errors` |
 | soumission incohérente (question hors du quiz, réponse inexistante) | `400` |
 | catégorie ou import inconnu, route inexistante | `404` |
-| fichier d'import inexploitable (en-tête incorrect) | `422`, avec le bilan de l'import (`status: FAILED`) |
 | `Content-Type` autre que JSON | `415` |
 | erreur inattendue | `500`, sans détail technique (la cause est dans les logs) |
 
@@ -230,17 +233,36 @@ phobies;Comment appelle-t-on la peur des clowns ?;Coulrophobie;Clinophobie;Cynop
 | `DUPLICATE_IN_FILE` | même question plus haut dans le fichier (casse et espaces ignorés) |
 | `ALREADY_EXISTS` | même question déjà en base |
 
-Une ligne peut être rejetée pour plusieurs motifs à la fois. Un en-tête incorrect fait échouer tout l'import (`422`).
+Une ligne peut être rejetée pour plusieurs motifs à la fois. Un en-tête incorrect fait échouer tout l'import (statut `FAILED`).
 
 Essai avec le fichier d'exemple [`samples/questions-import.csv`](samples/questions-import.csv), qui contient des erreurs volontaires :
 
+L'import est **asynchrone** : la requête répond tout de suite `202 Accepted`, avec l'URL de suivi dans l'en-tête
+`Location`, et le fichier est traité en arrière-plan (au plus 2 imports en parallèle, les suivants attendent leur tour).
+
 ```bash
-curl -s -F file=@samples/questions-import.csv http://localhost:8080/api/imports
+curl -si -F file=@samples/questions-import.csv http://localhost:8080/api/imports
+```
+
+```
+HTTP/1.1 202
+Location: http://localhost:8080/api/imports/1
+
+{"executionId": 1, "status": "STARTING", "startTime": null, "endTime": null, "read": 0, "written": 0, "rejected": 0}
+```
+
+On suit l'avancement (les compteurs progressent à chaque paquet de 100 lignes) jusqu'à `COMPLETED` ou `FAILED` :
+
+```bash
+curl -s http://localhost:8080/api/imports/1
 ```
 
 ```json
-{"executionId": 1, "status": "COMPLETED", "read": 12, "written": 5, "rejected": 7}
+{"executionId": 1, "status": "COMPLETED", "startTime": "2026-11-06T19:25:45", "endTime": "2026-11-06T19:25:45",
+ "read": 12, "written": 5, "rejected": 7}
 ```
+
+Puis on consulte le rapport de qualité :
 
 ```bash
 curl -s http://localhost:8080/api/imports/1/rejections
@@ -256,5 +278,5 @@ curl -s http://localhost:8080/api/imports/1/rejections
 
 (extrait ; réimporter le même fichier n'écrit rien : toutes les lignes valides sont alors `ALREADY_EXISTS`)
 
-L'exécution est **synchrone** : la réponse arrive une fois le fichier entièrement traité.
-Chaque import est tracé dans les tables de Spring Batch (`batch_job_execution`…) et son rapport dans `import_rejection`.
+Le statut et les compteurs ne sont pas recalculés : ils sont lus dans les tables de Spring Batch (`batch_job_execution`,
+`batch_step_execution`), et le rapport dans `import_rejection`. Le fichier reçu est supprimé à la fin de l'import.

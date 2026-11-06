@@ -15,12 +15,16 @@ import org.springframework.batch.core.step.StepExecution;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Implémente l'import de fichier en lançant le job Spring Batch, puis traduit l'exécution (vocabulaire Batch)
- * en {@link ImportReport} (vocabulaire du domaine). Le controller REST ne connaît que le port.
+ * Implémente l'import de fichier avec Spring Batch : lance le job (en arrière-plan, voir
+ * {@code BatchAsyncConfiguration}) et relit son état dans les tables de Spring Batch.
+ * Traduit le vocabulaire Batch ({@code JobExecution}, {@code readCount}…) en {@link ImportReport} du domaine :
+ * le controller REST ne connaît que le port.
  */
 @Component
 public class BatchQuestionFileImport implements QuestionFileImportUseCase {
@@ -39,40 +43,53 @@ public class BatchQuestionFileImport implements QuestionFileImportUseCase {
     }
 
     @Override
-    public ImportReport importFile(Path csvFile) {
+    public ImportReport startImport(Path csvFile) {
         JobParameters parameters = new JobParametersBuilder()
                 .addString(ImportQuestionsJobConfig.INPUT_FILE, csvFile.toAbsolutePath().toString())
                 // Spring Batch refuse de relancer une exécution terminée avec les MÊMES paramètres :
                 // l'horodatage fait de chaque import une nouvelle instance du job.
                 .addLong("run.at", System.currentTimeMillis())
+                // Non identifiant (false) : c'est une consigne de ménage, pas une caractéristique de l'import.
+                .addString(TempFileCleanupListener.TEMPORARY_INPUT, "true", false)
                 .toJobParameters();
+        JobExecution execution;
         try {
-            return toReport(jobOperator.start(importQuestionsJob, parameters));
+            execution = jobOperator.start(importQuestionsJob, parameters);
         } catch (Exception e) {
-            // Le job n'a pas pu démarrer (paramètres invalides, instance déjà en cours…) : erreur technique.
+            deleteQuietly(csvFile);
             throw new IllegalStateException("could not start the import job", e);
         }
+        if (!execution.isRunning()) {
+            // Refusé avant même de démarrer (file d'attente pleine) : le listener de fin ne passera jamais.
+            deleteQuietly(csvFile);
+        }
+        return toReport(execution);
+    }
+
+    @Override
+    public ImportReport findImport(long importId) {
+        return toReport(requireImportExecution(importId));
     }
 
     @Override
     public List<ImportRejection> findRejections(long importId) {
-        if (!isImportExecution(importId)) {
-            throw new UnknownImportException(importId);
-        }
+        requireImportExecution(importId);
         return importQuestions.findRejections(importId);
     }
 
-    /** L'exécution existe-t-elle, et est-ce bien un import (et pas un autre job) ? */
-    private boolean isImportExecution(long executionId) {
+    /** Relit l'exécution en base ; elle doit exister et être bien un import (pas un autre job). */
+    private JobExecution requireImportExecution(long executionId) {
         JobExecution execution;
         try {
             execution = jobRepository.getJobExecution(executionId);
         } catch (EmptyResultDataAccessException e) {
             // Spring Batch 6.0 lève cette exception pour un id inconnu au lieu de renvoyer null.
-            return false;
+            execution = null;
         }
-        return execution != null
-                && ImportQuestionsJobConfig.JOB_NAME.equals(execution.getJobInstance().getJobName());
+        if (execution == null || !ImportQuestionsJobConfig.JOB_NAME.equals(execution.getJobInstance().getJobName())) {
+            throw new UnknownImportException(executionId);
+        }
+        return execution;
     }
 
     private static ImportReport toReport(JobExecution execution) {
@@ -84,6 +101,16 @@ public class BatchQuestionFileImport implements QuestionFileImportUseCase {
             written += step.getWriteCount();
             rejected += step.getSkipCount();
         }
-        return new ImportReport(execution.getId(), execution.getStatus().name(), read, written, rejected);
+        return new ImportReport(execution.getId(), execution.getStatus().name(),
+                execution.getStartTime(), execution.getEndTime(), read, written, rejected);
+    }
+
+    /** Ménage « au mieux » : ne doit jamais masquer l'erreur ou le résultat qui l'a déclenché. */
+    private static void deleteQuietly(Path file) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException ignored) {
+            // fichier temporaire oublié : sans conséquence sur l'import
+        }
     }
 }

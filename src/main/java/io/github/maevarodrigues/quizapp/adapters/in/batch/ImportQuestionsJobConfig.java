@@ -37,6 +37,7 @@ public class ImportQuestionsJobConfig {
     @Bean
     Job importQuestionsJob(JobRepository jobRepository, Step importQuestionsStep) {
         return new JobBuilder(JOB_NAME, jobRepository)
+                .listener(new TempFileCleanupListener())
                 .start(importQuestionsStep)
                 .build();
     }

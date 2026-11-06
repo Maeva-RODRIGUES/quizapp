@@ -10,6 +10,7 @@ import org.springframework.batch.core.job.JobExecution;
 import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.StepExecution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,11 +20,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 
 /**
  * Le job de bout en bout, sur un vrai PostgreSQL : fichier CSV → règles de qualité → tables {@code question}
@@ -42,6 +45,9 @@ class ImportQuestionsJobIT {
     private JobOperator jobOperator;
 
     @Autowired
+    private JobRepository jobRepository;
+
+    @Autowired
     private Job importQuestionsJob;
 
     @Autowired
@@ -58,7 +64,11 @@ class ImportQuestionsJobIT {
                 .addString(ImportQuestionsJobConfig.INPUT_FILE, file.toString())
                 .addLong("run.at", System.nanoTime()) // rend chaque exécution unique (sinon : « déjà faite »)
                 .toJobParameters();
-        return jobOperator.start(importQuestionsJob, parameters);
+        long executionId = jobOperator.start(importQuestionsJob, parameters).getId();
+        // Le lancement est asynchrone : on attend la fin du job (sans Thread.sleep), puis on relit son état en base.
+        await().atMost(Duration.ofSeconds(30))
+                .until(() -> !jobRepository.getJobExecution(executionId).isRunning());
+        return jobRepository.getJobExecution(executionId);
     }
 
     private static Path mixedFile() throws Exception {
@@ -134,8 +144,8 @@ class ImportQuestionsJobIT {
         JobExecution execution = runImport(file);
 
         assertThat(execution.getStatus()).isEqualTo(BatchStatus.FAILED);
-        assertThat(execution.getAllFailureExceptions()).anySatisfy(failure ->
-                assertThat(failure).hasStackTraceContaining("unexpected CSV header"));
+        // Relue depuis la base : la cause est conservée dans le message de sortie (colonne exit_message).
+        assertThat(step(execution).getExitStatus().getExitDescription()).contains("unexpected CSV header");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM question", Integer.class)).isZero();
     }
 
