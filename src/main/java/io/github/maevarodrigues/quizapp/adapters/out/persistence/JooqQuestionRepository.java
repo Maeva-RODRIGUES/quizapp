@@ -2,6 +2,7 @@ package io.github.maevarodrigues.quizapp.adapters.out.persistence;
 
 import io.github.maevarodrigues.quizapp.domain.exception.UnknownCategoryException;
 import io.github.maevarodrigues.quizapp.domain.model.Question;
+import io.github.maevarodrigues.quizapp.domain.model.QuestionKey;
 import io.github.maevarodrigues.quizapp.domain.port.out.QuestionRepository;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -56,6 +57,16 @@ public class JooqQuestionRepository implements QuestionRepository {
     @Override
     public List<Question> findByCategoryCode(String categoryCode) {
         return fetchQuestions(CATEGORY.CODE.eq(categoryCode));
+    }
+
+    /** S'appuie sur la colonne générée {@code text_key} et son index unique : une recherche indexée, pas un parcours. */
+    @Override
+    public boolean existsByKey(QuestionKey key) {
+        return dsl.fetchExists(dsl.selectOne()
+                .from(QUESTION)
+                .join(CATEGORY).on(CATEGORY.ID.eq(QUESTION.CATEGORY_ID))
+                .where(CATEGORY.CODE.eq(key.categoryCode()))
+                .and(QUESTION.TEXT_KEY.eq(key.normalizedText())));
     }
 
     /**

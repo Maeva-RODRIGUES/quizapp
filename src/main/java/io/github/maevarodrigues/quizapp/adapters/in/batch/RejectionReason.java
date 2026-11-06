@@ -6,6 +6,7 @@ package io.github.maevarodrigues.quizapp.adapters.in.batch;
  */
 public enum RejectionReason {
 
+    MALFORMED_LINE("la ligne n'a pas le bon nombre de colonnes (ou des guillemets mal fermés)"),
     UNKNOWN_CATEGORY("la catégorie n'existe pas dans le référentiel"),
     EMPTY_TEXT("l'énoncé est vide"),
     TEXT_TOO_LONG("l'énoncé dépasse la longueur maximale"),

@@ -2,6 +2,7 @@ package io.github.maevarodrigues.quizapp.adapters.out.persistence;
 
 import io.github.maevarodrigues.quizapp.TestcontainersConfiguration;
 import io.github.maevarodrigues.quizapp.domain.model.Question;
+import io.github.maevarodrigues.quizapp.domain.model.QuestionKey;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,5 +115,18 @@ class JooqQuestionRepositoryIT {
 
     private Question findById(long id) {
         return repository.findAll().stream().filter(q -> q.id() == id).findFirst().orElseThrow();
+    }
+
+    @Test
+    void existsByKey_findsAStoredQuestionWrittenDifferently() {
+        assertThat(repository.existsByKey(QuestionKey.of("phobies", "  QUEL est le nom de la peur des   araignées ? ")))
+                .isTrue();
+    }
+
+    @Test
+    void existsByKey_isFalseForAnotherCategoryOrAnUnknownText() {
+        assertThat(repository.existsByKey(QuestionKey.of("superstitions", "Quel est le nom de la peur des araignées ?")))
+                .isFalse();
+        assertThat(repository.existsByKey(QuestionKey.of("phobies", "Quelle est la peur des clowns ?"))).isFalse();
     }
 }

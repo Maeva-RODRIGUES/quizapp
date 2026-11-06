@@ -1,8 +1,10 @@
 package io.github.maevarodrigues.quizapp.config;
 
 import io.github.maevarodrigues.quizapp.application.CategoryService;
+import io.github.maevarodrigues.quizapp.application.QuestionImportService;
 import io.github.maevarodrigues.quizapp.application.QuizService;
 import io.github.maevarodrigues.quizapp.domain.port.out.CategoryRepository;
+import io.github.maevarodrigues.quizapp.domain.port.out.ImportRejectionRepository;
 import io.github.maevarodrigues.quizapp.domain.port.out.QuestionRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,5 +27,11 @@ public class BeanConfiguration {
     @Bean
     QuizService quizService(CategoryRepository categoryRepository, QuestionRepository questionRepository) {
         return new QuizService(categoryRepository, questionRepository);
+    }
+
+    @Bean
+    QuestionImportService questionImportService(CategoryRepository categoryRepository,
+            QuestionRepository questionRepository, ImportRejectionRepository rejectionRepository) {
+        return new QuestionImportService(categoryRepository, questionRepository, rejectionRepository);
     }
 }

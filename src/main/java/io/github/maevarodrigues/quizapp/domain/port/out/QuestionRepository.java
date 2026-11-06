@@ -1,6 +1,7 @@
 package io.github.maevarodrigues.quizapp.domain.port.out;
 
 import io.github.maevarodrigues.quizapp.domain.model.Question;
+import io.github.maevarodrigues.quizapp.domain.model.QuestionKey;
 
 import java.util.List;
 
@@ -14,6 +15,11 @@ public interface QuestionRepository {
 
     /** Les questions d'une catégorie, triées par id ; liste vide si la catégorie n'en a aucune. */
     List<Question> findByCategoryCode(String categoryCode);
+
+    /**
+     * Une question de même clé (catégorie + texte normalisé, voir {@link QuestionKey}) est-elle déjà enregistrée ?
+     */
+    boolean existsByKey(QuestionKey key);
 
     /**
      * Enregistre de nouvelles questions avec leurs réponses, en une seule transaction : tout ou rien.
