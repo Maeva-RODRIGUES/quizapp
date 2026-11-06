@@ -1,7 +1,10 @@
 package io.github.maevarodrigues.quizapp;
 
 import org.junit.jupiter.api.BeforeEach;
+import io.github.maevarodrigues.quizapp.domain.model.QuestionKey;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -119,6 +122,20 @@ class LiquibaseSchemaIT {
         String textKey = jdbc.queryForObject("SELECT text_key FROM question WHERE id = ?", String.class, questionId);
 
         assertThat(textKey).isEqualTo("quelle est la peur des clowns ?");
+    }
+
+    /**
+     * Le dédoublonnage de l'import (Java, {@link QuestionKey}) et la contrainte d'unicité (SQL, {@code text_key})
+     * doivent donner le même verdict. Les textes sont passés tels que le domaine les enregistre (sans espaces autour).
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"Quelle est la peur des clowns ?", "QUELLE   est\tla\npeur des CLOWNS ?", "Peur des ARAIGNÉES ?"})
+    void javaQuestionKeyMatchesDatabaseTextKey(String text) {
+        long questionId = insertQuestion(categoryId, text);
+
+        String textKey = jdbc.queryForObject("SELECT text_key FROM question WHERE id = ?", String.class, questionId);
+
+        assertThat(QuestionKey.of("test-cat", text).normalizedText()).isEqualTo(textKey);
     }
 
     @Test
