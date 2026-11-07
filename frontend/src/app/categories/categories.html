@@ -1,0 +1,20 @@
+<h2>Choisis une catégorie</h2>
+
+@if (categories.isLoading()) {
+  <p class="info">Chargement des catégories…</p>
+} @else if (categories.error()) {
+  <p class="error" role="alert">
+    Impossible de charger les catégories. L'API est-elle démarrée ?
+  </p>
+  <button type="button" (click)="categories.reload()">Réessayer</button>
+} @else {
+  <ul>
+    @for (category of categories.value(); track category.code) {
+      <li>
+        <a [routerLink]="['/quiz', category.code]">{{ category.label }}</a>
+      </li>
+    } @empty {
+      <li class="info">Aucune catégorie pour l'instant.</li>
+    }
+  </ul>
+}
