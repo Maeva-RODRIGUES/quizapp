@@ -1,6 +1,8 @@
-# Environnement local : démarré automatiquement par `./mvnw spring-boot:run`
-# (module spring-boot-docker-compose), ou à la main avec `docker compose up -d`.
-# Identifiants de développement uniquement : cette base n'est jamais exposée hors de la machine.
+# Environnement local.
+# - Développement : `./mvnw spring-boot:run` démarre automatiquement PostgreSQL seul
+#   (module spring-boot-docker-compose), ou à la main avec `docker compose up -d`.
+# - Application complète dans Docker : `./mvnw package` puis `docker compose --profile app up --build`.
+# Identifiants de développement uniquement : rien n'est exposé hors de la machine.
 services:
   postgres:
     image: postgres:18
@@ -20,6 +22,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  app:
+    # Rangé dans le profile "app" : `docker compose up` et `spring-boot:run` ne démarrent que PostgreSQL.
+    profiles: [app]
+    build: .
+    image: quizapp:local
+    depends_on:
+      postgres:
+        condition: service_healthy   # attendre que PostgreSQL accepte les connexions (healthcheck ci-dessus)
+    environment:
+      SPRING_PROFILES_ACTIVE: local  # données de démo (context Liquibase "demo")
+      # Dans le réseau de Compose, la base s'appelle « postgres » (nom du service) et écoute sur 5432.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/quizapp
+      SPRING_DATASOURCE_USERNAME: quizapp
+      SPRING_DATASOURCE_PASSWORD: quizapp
+    ports:
+      - "127.0.0.1:8080:8080"
 
 volumes:
   postgres-data:

@@ -1,0 +1,4 @@
+# Le contexte de build Docker ne contient que le jar : tout le reste (sources, .git, PLAN.md, .idea…)
+# est exclu, ce qui accélère le build et évite de copier par erreur des fichiers locaux dans l'image.
+*
+!target/quizapp-*.jar

@@ -14,7 +14,7 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 
 | | Aujourd'hui |
 |---|---|
-| Langage / framework | Java 21, Spring Boot 4.1 |
+| Langage / framework | Java 21, Spring Boot 4.1, image Docker (multi-stage, non-root) |
 | Base de données | PostgreSQL 18, schéma versionné avec Liquibase (catégories, questions, réponses, contraintes de qualité), catégories de référence et 10 questions de démo, tables de suivi Spring Batch et rapport des lignes rejetées à l'import (préparés pour l'import CSV) |
 | Domaine | modèle métier en Java pur (questions, catégories, correction et score), cas d'usage et ports, sans dépendance au framework |
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
@@ -25,7 +25,7 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 Limites connues : un import interrompu par un arrêt brutal de l'application reste au statut `STARTED`
 (pas encore de reprise ni de nettoyage automatique de ces exécutions).
 
-Prochaine étape : image Docker de l'application, enrichissement de la CI et analyse de qualité SonarCloud.
+Prochaine étape : enrichissement de la CI (construction de l'image Docker) et analyse de qualité SonarCloud.
 
 ## Architecture
 
@@ -98,6 +98,19 @@ Pour explorer la base :
 ```bash
 docker compose exec postgres psql -U quizapp -d quizapp
 ```
+
+### Lancer l'application dans Docker
+
+L'image est construite à partir du jar produit par Maven (multi-stage : JRE seul, utilisateur non-root,
+couches séparées pour que les dépendances restent en cache) :
+
+```bash
+./mvnw package
+docker compose --profile app up --build    # application (port 8080) + PostgreSQL, avec les questions de démo
+docker compose --profile app down          # arrêt (les données sont conservées dans le volume)
+```
+
+Sans `--profile app`, `docker compose up` ne démarre que PostgreSQL, comme `./mvnw spring-boot:run`.
 
 ## API
 
