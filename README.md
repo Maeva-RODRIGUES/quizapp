@@ -1,6 +1,8 @@
 # quizapp
 
 [![CI](https://github.com/Maeva-RODRIGUES/quizapp/actions/workflows/ci.yml/badge.svg)](https://github.com/Maeva-RODRIGUES/quizapp/actions/workflows/ci.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Maeva-RODRIGUES_quizapp&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Maeva-RODRIGUES_quizapp)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Maeva-RODRIGUES_quizapp&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Maeva-RODRIGUES_quizapp)
 
 API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 **Superstitions étranges** et **Phobies étranges**.
@@ -20,12 +22,12 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
 | API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`) sans jamais exposer la bonne réponse, `POST /api/quiz/submit` (score et correction), entrées validées, erreurs au format standard *Problem Details* (RFC 9457) |
 | Import de données | `POST /api/imports` : job Spring Batch d'import CSV **asynchrone** avec règles de qualité (validation, dédoublonnage), suivi de l'avancement, rapport des lignes rejetées et compteurs |
-| Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push, avec construction de l'image Docker |
+| Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push, avec construction de l'image Docker ; couverture mesurée par JaCoCo, qualité analysée par SonarCloud |
 
 Limites connues : un import interrompu par un arrêt brutal de l'application reste au statut `STARTED`
 (pas encore de reprise ni de nettoyage automatique de ces exécutions).
 
-Prochaine étape : couverture de tests (JaCoCo) et analyse de qualité SonarCloud.
+Prochaine étape : documentation finale.
 
 ## Architecture
 
@@ -68,7 +70,7 @@ io.github.maevarodrigues.quizapp
 - [x] **Phase 4** : persistance avec jOOQ, tests d'intégration Testcontainers
 - [x] **Phase 5** : API complète (catégories, questions par catégorie, soumission et score), validation, gestion d'erreurs
 - [x] **Phase 6** : job Spring Batch d'import CSV avec règles de qualité des données
-- [ ] **Phase 7** : Dockerfile, intégration continue, SonarCloud
+- [x] **Phase 7** : Dockerfile, intégration continue, SonarCloud
 - [ ] **Phase 8** : documentation finale
 - [ ] **Bonus** : front Angular minimal, déploiement AWS décrit en Terraform
 
@@ -83,7 +85,7 @@ Prérequis :
   - `./mvnw spring-boot:run` démarre automatiquement PostgreSQL (`compose.yaml`, port local 5433).
 
 ```bash
-# Compiler et lancer les tests
+# Compiler et lancer les tests (rapport de couverture : target/site/jacoco/index.html)
 ./mvnw verify
 
 # Démarrer l'application (port 8080) avec les questions de démo

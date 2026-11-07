@@ -22,6 +22,16 @@
 		<!-- Testcontainers 1.x, utilisé UNIQUEMENT par le plugin de génération jOOQ (classpath isolé) :
 		     le plugin n'est pas compatible avec les artefacts renommés de Testcontainers 2. -->
 		<testcontainers-codegen.version>1.21.4</testcontainers-codegen.version>
+		<jacoco-maven-plugin.version>0.8.16</jacoco-maven-plugin.version>
+		<sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
+		<!-- Rempli par JaCoCo (agent de couverture) ; vide par défaut pour que @{argLine} soit toujours défini. -->
+		<argLine/>
+		<!-- Analyse SonarCloud (lancée par la CI) : le token est fourni par la variable d'environnement SONAR_TOKEN. -->
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<sonar.organization>maeva-rodrigues</sonar.organization>
+		<sonar.projectKey>Maeva-RODRIGUES_quizapp</sonar.projectKey>
+		<!-- Code généré par jOOQ : ce n'est pas notre code, ni à analyser ni à compter dans la couverture. -->
+		<sonar.exclusions>**/adapters/out/persistence/jooq/**</sonar.exclusions>
 	</properties>
 
 	<dependencies>
@@ -195,7 +205,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
+					<!-- @{argLine} (évalué tard) garde l'agent JaCoCo ajouté par prepare-agent. -->
+					<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
 				</configuration>
 			</plugin>
 			<!-- Tests d'intégration (classes *IT) : lancés par `./mvnw verify`, après les tests unitaires
@@ -204,7 +215,7 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
 				<configuration>
-					<argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
+					<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
 				</configuration>
 				<executions>
 					<execution>
@@ -215,7 +226,45 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Couverture de tests : un seul fichier jacoco.exec, alimenté par les tests unitaires ET d'intégration
+			     (même argLine), puis rapport HTML + XML (lu par SonarCloud) dans target/site/jacoco. -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco-maven-plugin.version}</version>
+				<configuration>
+					<excludes>
+						<exclude>io/github/maevarodrigues/quizapp/adapters/out/persistence/jooq/**</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<!-- Phase verify : après les tests d'intégration (phase integration-test). -->
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
+		<pluginManagement>
+			<plugins>
+				<!-- Version figée pour que `./mvnw sonar:sonar` soit reproductible. -->
+				<plugin>
+					<groupId>org.sonarsource.scanner.maven</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>${sonar-maven-plugin.version}</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 
 </project>
