@@ -427,5 +427,10 @@ construit l'image Docker et envoie couverture et analyse à SonarCloud.
 - [x] **Phase 5** : API complète (catégories, questions par catégorie, soumission et score), validation, gestion d'erreurs
 - [x] **Phase 6** : job Spring Batch d'import CSV avec règles de qualité des données
 - [x] **Phase 7** : Dockerfile, intégration continue, SonarCloud
-- [ ] **Phase 8** : documentation finale, licence
+- [x] **Phase 8** : documentation finale, licence
 - [ ] **Bonus** : front Angular minimal, déploiement AWS décrit en Terraform
+
+## Licence
+
+Distribué sous licence [MIT](LICENSE) : vous pouvez réutiliser, modifier et redistribuer ce code,
+à condition de conserver la mention de copyright.
