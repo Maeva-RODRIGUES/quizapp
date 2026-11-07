@@ -33,7 +33,7 @@ public record ImportReport(long importId, String status, LocalDateTime startTime
         }
     }
 
-    public boolean completed() {
+    public boolean isCompleted() {
         return COMPLETED.equals(status);
     }
 

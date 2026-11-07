@@ -7,6 +7,7 @@ import io.github.maevarodrigues.quizapp.domain.port.in.QuestionFileImportUseCase
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ImportController.class)
+@Import(ImportUploadDirectory.class)
 class ImportControllerTest {
 
     private static final String CSV = """
@@ -42,6 +44,9 @@ class ImportControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ImportUploadDirectory uploadDirectory;
 
     @MockitoBean
     private QuestionFileImportUseCase fileImport;
@@ -67,7 +72,7 @@ class ImportControllerTest {
                 .andExpect(jsonPath("$.endTime").isEmpty());
 
         // Le controller ne supprime plus le fichier : l'import tourne encore, c'est lui qui le supprimera.
-        assertThat(receivedFile.get()).exists();
+        assertThat(receivedFile.get()).exists().hasParent(uploadDirectory.path());
         Files.deleteIfExists(receivedFile.get());
     }
 

@@ -16,7 +16,7 @@ class ImportReportTest {
         ImportReport report = new ImportReport(1L, "STARTING", null, null, 0, 0, 0);
 
         assertThat(report.finished()).isFalse();
-        assertThat(report.completed()).isFalse();
+        assertThat(report.isCompleted()).isFalse();
     }
 
     @Test
@@ -24,7 +24,7 @@ class ImportReportTest {
         ImportReport report = new ImportReport(1L, "COMPLETED", START, START.plusSeconds(2), 12, 5, 7);
 
         assertThat(report.finished()).isTrue();
-        assertThat(report.completed()).isTrue();
+        assertThat(report.isCompleted()).isTrue();
     }
 
     @Test
@@ -32,7 +32,7 @@ class ImportReportTest {
         ImportReport report = new ImportReport(1L, "FAILED", START, START.plusSeconds(1), 0, 0, 0);
 
         assertThat(report.finished()).isTrue();
-        assertThat(report.completed()).isFalse();
+        assertThat(report.isCompleted()).isFalse();
     }
 
     @Test

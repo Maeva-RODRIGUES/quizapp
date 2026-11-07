@@ -32,9 +32,11 @@ import java.util.List;
 public class ImportController {
 
     private final QuestionFileImportUseCase fileImport;
+    private final ImportUploadDirectory uploadDirectory;
 
-    public ImportController(QuestionFileImportUseCase fileImport) {
+    public ImportController(QuestionFileImportUseCase fileImport, ImportUploadDirectory uploadDirectory) {
         this.fileImport = fileImport;
+        this.uploadDirectory = uploadDirectory;
     }
 
     /**
@@ -47,8 +49,8 @@ public class ImportController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "the uploaded file is empty");
         }
         // Le nom de fichier envoyé par le client n'est jamais utilisé pour écrire sur le disque :
-        // on crée notre propre fichier temporaire (pas de risque de « path traversal »).
-        Path tempFile = Files.createTempFile("quizapp-import-", ".csv");
+        // on crée notre propre fichier, dans un dossier privé (pas de risque de « path traversal »).
+        Path tempFile = uploadDirectory.newFile();
         ImportReport report;
         try {
             file.transferTo(tempFile);

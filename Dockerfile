@@ -25,6 +25,9 @@ COPY --from=extractor /builder/extracted/dependencies/ ./
 COPY --from=extractor /builder/extracted/spring-boot-loader/ ./
 COPY --from=extractor /builder/extracted/snapshot-dependencies/ ./
 COPY --from=extractor /builder/extracted/application/ ./
+# Dossier des fichiers importés : l'application tourne sans root, elle n'écrit que là (et dans /tmp pour Tomcat).
+RUN install --directory --owner=spring --group=spring --mode=700 /application/imports
+ENV QUIZAPP_IMPORT_UPLOAD_DIR=/application/imports
 USER spring:spring
 EXPOSE 8080
 # La JVM s'adapte à la mémoire du conteneur : on lui laisse 75 % de la limite pour le tas.

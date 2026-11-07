@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 public record Category(Long id, String code, String label) {
 
     /** Minuscules, chiffres et tirets internes : même règle que la contrainte {@code ck_category_code_format}. */
-    private static final Pattern CODE_FORMAT = Pattern.compile("^[a-z0-9]+(-[a-z0-9]+)*$");
+    private static final Pattern CODE_FORMAT = Pattern.compile("^[a-z0-9]++(?:-[a-z0-9]++)*+$");
 
     public Category {
         code = requireValidCode(code, "code");

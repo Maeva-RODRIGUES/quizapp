@@ -1,6 +1,7 @@
 package io.github.maevarodrigues.quizapp.domain.model;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * Une ligne d'un fichier importé refusée par une règle de qualité : de quoi la retrouver et la corriger.
@@ -13,12 +14,15 @@ import java.util.Objects;
  */
 public record ImportRejection(long importId, int lineNumber, String rawLine, String reason) {
 
+    /** Quantificateurs possessifs (++, *+) : pas de retour arrière, donc pas de récursion profonde sur une longue chaîne. */
+    private static final Pattern REASON_FORMAT = Pattern.compile("^[A-Z]++(?:_[A-Z]++)*+$");
+
     public ImportRejection {
         if (lineNumber < 1) {
             throw new IllegalArgumentException("lineNumber must be positive, but was: " + lineNumber);
         }
         Objects.requireNonNull(rawLine, "rawLine");
-        if (reason == null || !reason.matches("^[A-Z]+(_[A-Z]+)*$")) {
+        if (reason == null || !REASON_FORMAT.matcher(reason).matches()) {
             throw new IllegalArgumentException("reason must be an UPPER_SNAKE_CASE code, but was: " + reason);
         }
     }

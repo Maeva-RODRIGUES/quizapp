@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 class TempFileCleanupListenerTest {
 
@@ -47,6 +48,8 @@ class TempFileCleanupListenerTest {
 
     @Test
     void anAlreadyDeletedFile_isNotAnError(@TempDir Path dir) {
-        listener.afterJob(executionFor(dir.resolve("absent.csv"), true));
+        Path absent = dir.resolve("absent.csv");
+
+        assertThatNoException().isThrownBy(() -> listener.afterJob(executionFor(absent, true)));
     }
 }
