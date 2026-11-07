@@ -20,12 +20,12 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 | Persistance | adaptateurs jOOQ (code généré depuis le schéma Liquibase) : lecture des questions avec leurs réponses en une requête (`MULTISET`), écriture transactionnelle |
 | API | `GET /api/categories`, `GET /api/questions` (filtre `?category=`) sans jamais exposer la bonne réponse, `POST /api/quiz/submit` (score et correction), entrées validées, erreurs au format standard *Problem Details* (RFC 9457) |
 | Import de données | `POST /api/imports` : job Spring Batch d'import CSV **asynchrone** avec règles de qualité (validation, dédoublonnage), suivi de l'avancement, rapport des lignes rejetées et compteurs |
-| Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push |
+| Tests | tests unitaires (domaine, services avec Mockito), règles d'architecture (ArchUnit), tests d'intégration sur un vrai PostgreSQL (Testcontainers), exécutés en CI à chaque push, avec construction de l'image Docker |
 
 Limites connues : un import interrompu par un arrêt brutal de l'application reste au statut `STARTED`
 (pas encore de reprise ni de nettoyage automatique de ces exécutions).
 
-Prochaine étape : enrichissement de la CI (construction de l'image Docker) et analyse de qualité SonarCloud.
+Prochaine étape : couverture de tests (JaCoCo) et analyse de qualité SonarCloud.
 
 ## Architecture
 

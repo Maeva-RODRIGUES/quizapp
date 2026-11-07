@@ -5,9 +5,19 @@ on:
     branches: [main]
   pull_request:
 
+# Moindre privilège : le workflow lit le dépôt, il n'a besoin d'écrire nulle part.
+permissions:
+  contents: read
+
+# Un nouveau push sur la même branche annule l'exécution précédente, devenue obsolète.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -21,3 +31,19 @@ jobs:
 
       - name: Build and test
         run: ./mvnw -B verify
+
+      # Seulement si une étape précédente a échoué : on peut lire les rapports sans relancer le build.
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Vérifie que le Dockerfile fonctionne avec le jar produit par "verify" (image construite, pas publiée).
+      - name: Build Docker image
+        run: docker build --tag quizapp:ci .
