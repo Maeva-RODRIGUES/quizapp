@@ -1,0 +1,8 @@
+/* Styles globaux : le reste est porté par chaque composant. */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #1f2328;
+  background: #f6f8fa;
+}
