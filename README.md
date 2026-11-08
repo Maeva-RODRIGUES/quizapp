@@ -446,6 +446,8 @@ cd frontend && npm test -- --watch=false    # tests du front
 La CI (GitHub Actions) lance `./mvnw verify` à chaque push, publie les rapports de tests en cas d'échec,
 construit l'image Docker et envoie couverture et analyse à SonarCloud. Un second job, en parallèle,
 installe le front (`npm ci`), lance ses tests et son build de production.
+SonarCloud analyse le back **et** le front en une seule fois : couverture JaCoCo pour Java,
+rapport lcov de Vitest pour TypeScript (`npm test -- --watch=false --coverage`).
 
 ## Limites connues
 

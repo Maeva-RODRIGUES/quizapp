@@ -69,7 +69,10 @@
           }
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "coverageReporters": [["lcov", { "projectRoot": ".." }], "text-summary"]
+          }
         }
       }
     }

@@ -37,8 +37,15 @@
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 		<sonar.organization>maeva-rodrigues</sonar.organization>
 		<sonar.projectKey>Maeva-RODRIGUES_quizapp</sonar.projectKey>
+		<!-- Une seule analyse pour tout le dépôt : back Java + front Angular (frontend/).
+		     Les specs Angular (*.spec.ts) sont des tests : exclus des sources, inclus dans les tests. -->
+		<sonar.sources>pom.xml,src/main,.github,frontend/src</sonar.sources>
+		<sonar.tests>src/test,frontend/src</sonar.tests>
+		<sonar.test.inclusions>src/test/**,frontend/src/**/*.spec.ts</sonar.test.inclusions>
 		<!-- Code généré par jOOQ : ce n'est pas notre code, ni à analyser ni à compter dans la couverture. -->
-		<sonar.exclusions>**/adapters/out/persistence/jooq/**</sonar.exclusions>
+		<sonar.exclusions>**/adapters/out/persistence/jooq/**,frontend/src/**/*.spec.ts</sonar.exclusions>
+		<!-- Couverture du front, produite par les tests Vitest lancés avec l'option coverage (voir ci.yml). -->
+		<sonar.javascript.lcov.reportPaths>frontend/coverage/frontend/lcov.info</sonar.javascript.lcov.reportPaths>
 	</properties>
 
 	<dependencies>

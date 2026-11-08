@@ -50,7 +50,25 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # Envoie l'analyse et la couverture (target/site/jacoco/jacoco.xml) à SonarCloud.
+      # SonarCloud analyse back ET front en une seule fois : il lui faut aussi la couverture du front
+      # (frontend/coverage/frontend/lcov.info). Les tests front tournent donc ici une seconde fois,
+      # avec couverture ; le job "frontend" reste là pour un retour rapide en parallèle.
+      - name: Set up Node.js 22 (frontend coverage)
+        if: env.SONAR_TOKEN != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend tests with coverage
+        if: env.SONAR_TOKEN != ''
+        working-directory: frontend
+        run: |
+          npm ci --ignore-scripts
+          npm test -- --watch=false --coverage
+
+      # Envoie l'analyse et la couverture (jacoco.xml pour Java, lcov.info pour le front) à SonarCloud.
       - name: SonarCloud analysis
         if: env.SONAR_TOKEN != ''
         run: ./mvnw -B sonar:sonar

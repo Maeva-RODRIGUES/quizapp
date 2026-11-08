@@ -6,6 +6,7 @@ Interface web du quiz : elle appelle l'API Spring Boot du dossier parent.
 npm ci                         # installe les versions exactes de package-lock.json
 npm start                      # http://localhost:4200 (l'API doit tourner sur le port 8080)
 npm test -- --watch=false      # tests unitaires (Vitest)
+npm test -- --watch=false --coverage   # idem + couverture (coverage/frontend/lcov.info, lu par SonarCloud)
 npm run build                  # build de production dans dist/
 ```
 
