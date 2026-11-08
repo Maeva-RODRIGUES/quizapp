@@ -58,3 +58,33 @@ jobs:
       # Vérifie que le Dockerfile fonctionne avec le jar produit par "verify" (image construite, pas publiée).
       - name: Build Docker image
         run: docker build --tag quizapp:ci .
+
+  # Front Angular : job séparé, lancé en parallèle du build Java. Si l'un casse, on sait tout de suite lequel.
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          # Met en cache le dossier npm, clé calculée à partir du lockfile (comme "cache: maven" pour Java).
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # "npm ci" installe exactement les versions de package-lock.json (et échoue s'il n'est pas à jour) :
+      # le build est reproductible, contrairement à "npm install" qui peut mettre le lockfile à jour.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test -- --watch=false
+
+      - name: Build
+        run: npm run build
