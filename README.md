@@ -8,6 +8,7 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 **Superstitions étranges** et **Phobies étranges**. On liste les questions, on soumet ses réponses, l'API corrige
 et calcule le score. On peut aussi **importer des questions depuis un fichier CSV** : un job Spring Batch
 applique des règles de qualité des données et produit un rapport des lignes rejetées.
+Un [front Angular](#front-angular) minimal permet de jouer au quiz dans le navigateur.
 
 > Né en 2024 comme prototype minimal, le projet a été entièrement refondu autour d'une stack orientée données :
 > PostgreSQL, Liquibase, jOOQ, Spring Batch, architecture hexagonale, tests d'intégration Testcontainers,
@@ -25,6 +26,7 @@ applique des règles de qualité des données et produit un rapport des lignes r
 | Import de données | job Spring Batch **asynchrone** : validation, dédoublonnage, rapport des rejets, compteurs |
 | Tests | 244 tests : unitaires (JUnit 5, Mockito), `@WebMvcTest`, intégration sur un vrai PostgreSQL (Testcontainers) |
 | Livraison | image Docker multi-stage non-root, CI GitHub Actions, couverture JaCoCo, analyse SonarCloud |
+| Front (bonus) | Angular 22, TypeScript, signals, tests Vitest |
 
 ## Démarrage rapide
 
@@ -69,6 +71,31 @@ docker compose --profile app down          # arrêt (les données sont conservé
 
 Sans `--profile app`, `docker compose up` ne démarre que PostgreSQL, comme `./mvnw spring-boot:run`.
 
+## Front Angular
+
+Interface web minimale dans [`frontend/`](frontend) : on choisit une catégorie, on répond aux questions,
+puis on voit son score et la correction de chaque question.
+
+![Écran de résultat : score, réponses justes et fausses, bonne réponse affichée](docs/screenshot-quiz.png)
+
+Prérequis : Node.js 22. L'API doit tourner sur le port 8080 (voir [Démarrage rapide](#démarrage-rapide)).
+
+```bash
+cd frontend
+npm ci       # installe les versions exactes de package-lock.json
+npm start    # http://localhost:4200
+```
+
+| Écran | Route | Rôle |
+|---|---|---|
+| Catégories | `/` | liste les catégories (`GET /api/categories`) |
+| Quiz | `/quiz/:category` | affiche les questions, active le bouton d'envoi quand tout est répondu (`GET /api/questions`, `POST /api/quiz/submit`) |
+| Résultat | `/result` | score et correction ; ouvert directement sans quiz joué, il renvoie à l'accueil (*guard*) |
+
+Le code suit les pratiques actuelles d'Angular : composants *standalone*, état local en *signals*
+(`signal`, `computed`), chargements via `rxResource` (états chargement / erreur / vide gérés dans le template),
+et un client HTTP typé (`QuizApi`) qui reprend les DTO de l'API.
+
 ## Architecture
 
 Architecture hexagonale (*ports & adapters*) : le métier est au centre, les détails techniques autour.
@@ -77,7 +104,7 @@ Les dépendances pointent toujours vers le centre, et des règles ArchUnit le v�
 
 ```mermaid
 flowchart LR
-    client([Client HTTP]) --> web
+    client([Front Angular<br/>ou client HTTP]) --> web
     csv([Fichier CSV]) --> web
 
     subgraph adaptersIn [Adaptateurs entrants]
@@ -390,6 +417,13 @@ d'intégration vérifie que les deux restent d'accord.
 Un gros fichier ne doit pas bloquer une requête HTTP jusqu'au *timeout*. L'API répond `202 Accepted` avec l'URL
 de suivi, et le job tourne sur un pool de threads borné (2 imports en parallèle, file d'attente limitée).
 
+**Proxy Angular plutôt que CORS.**
+En développement, le front tourne sur le port 4200 et l'API sur le 8080 : pour le navigateur, ce sont deux
+origines différentes, et il bloquerait les appels sans configuration CORS côté Spring. Le serveur de développement
+Angular relaie donc les appels `/api/**` vers l'API (`frontend/proxy.conf.json`) : le navigateur ne parle qu'à une
+seule origine, et l'API n'a aucune règle CORS à maintenir. En production, on servirait de la même façon le front
+et l'API derrière une même origine (reverse proxy).
+
 ## Tests
 
 ```bash
@@ -403,9 +437,15 @@ de suivi, et le job tourne sur un pool de threads borné (2 imports en parallèl
 | Architecture | ArchUnit | sens des dépendances entre `domain`, `application` et `adapters` |
 | Web | `@WebMvcTest`, MockMvc | routes, validation, format des erreurs, DTO sans la bonne réponse |
 | Intégration (`*IT`) | Testcontainers (PostgreSQL 18), Awaitility | changelogs Liquibase, requêtes jOOQ, job Batch de bout en bout, API complète |
+| Front | Vitest, `HttpTestingController`, `RouterTestingHarness` | URL et corps des appels à l'API, états chargement / erreur / vide, réponses du quiz, *guard* de l'écran de résultat |
+
+```bash
+cd frontend && npm test -- --watch=false    # tests du front
+```
 
 La CI (GitHub Actions) lance `./mvnw verify` à chaque push, publie les rapports de tests en cas d'échec,
-construit l'image Docker et envoie couverture et analyse à SonarCloud.
+construit l'image Docker et envoie couverture et analyse à SonarCloud. Un second job, en parallèle,
+installe le front (`npm ci`), lance ses tests et son build de production.
 
 ## Limites connues
 
@@ -428,7 +468,9 @@ construit l'image Docker et envoie couverture et analyse à SonarCloud.
 - [x] **Phase 6** : job Spring Batch d'import CSV avec règles de qualité des données
 - [x] **Phase 7** : Dockerfile, intégration continue, SonarCloud
 - [x] **Phase 8** : documentation finale, licence
-- [ ] **Bonus** : front Angular minimal, déploiement AWS décrit en Terraform
+- [x] **Phase 9 (bonus)** : front Angular minimal, testé et construit en CI
+
+Piste non réalisée : décrire un déploiement AWS (conteneur sur ECS, front statique sur S3) en Terraform.
 
 ## Licence
 
