@@ -1,0 +1,40 @@
+<a routerLink="/" class="back">← Catégories</a>
+
+@if (questions.isLoading()) {
+  <p class="info">Chargement des questions…</p>
+} @else if (questions.error()) {
+  <p class="error" role="alert">Impossible de charger les questions. L'API est-elle démarrée ?</p>
+  <button type="button" (click)="questions.reload()">Réessayer</button>
+} @else if (questions.value().length === 0) {
+  <p class="info">Aucune question dans cette catégorie.</p>
+} @else {
+  <form (submit)="$event.preventDefault(); submit()">
+    @for (question of questions.value(); track question.id; let n = $index) {
+      <fieldset>
+        <legend>{{ n + 1 }}. {{ question.text }}</legend>
+        @for (option of question.options; track $index; let i = $index) {
+          <label>
+            <input
+              type="radio"
+              [name]="'question-' + question.id"
+              [checked]="answers()[question.id] === i"
+              (change)="choose(question.id, i)"
+            />
+            {{ option }}
+          </label>
+        }
+      </fieldset>
+    }
+
+    @if (submitError()) {
+      <p class="error" role="alert">L'envoi a échoué, réessaie dans un instant.</p>
+    }
+
+    <div class="actions">
+      <span class="info">{{ answeredCount() }} / {{ questions.value().length }} réponses</span>
+      <button type="submit" [disabled]="!allAnswered() || submitting()">
+        {{ submitting() ? 'Envoi…' : 'Valider mes réponses' }}
+      </button>
+    </div>
+  </form>
+}
