@@ -1,0 +1,25 @@
+<h2>Ton score : {{ outcome.result.score }} / {{ outcome.result.total }}</h2>
+
+<ol>
+  @for (row of rows; track row.questionId) {
+    <li [class.correct]="row.correct" [class.wrong]="!row.correct">
+      <p class="question">
+        <span class="mark" [attr.aria-label]="row.correct ? 'Bonne réponse' : 'Mauvaise réponse'">
+          {{ row.correct ? '✅' : '❌' }}
+        </span>
+        {{ row.text }}
+      </p>
+      @if (row.correct) {
+        <p>{{ row.expected }}</p>
+      } @else {
+        <p>Ta réponse : {{ row.given ?? 'aucune' }}</p>
+        <p>Bonne réponse : <strong>{{ row.expected }}</strong></p>
+      }
+    </li>
+  }
+</ol>
+
+<nav class="actions">
+  <a [routerLink]="['/quiz', outcome.category]">Rejouer cette catégorie</a>
+  <a routerLink="/">Changer de catégorie</a>
+</nav>
