@@ -1,8 +1,134 @@
-/* Styles globaux : le reste est porté par chaque composant. */
+/* Police de titre auto-hébergée (paquet npm) : aucun appel à un CDN, la démo fonctionne hors ligne. */
+@import '@fontsource-variable/cinzel';
+
+/*
+ * Design tokens : chaque choix visuel est défini une seule fois ici, puis réutilisé par tous les écrans
+ * via var(--…). Changer une couleur ou un espacement se fait donc à un seul endroit.
+ * Thème « cabinet de curiosités » : fond nuit, accents or et violet.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Couleurs */
+  --color-bg: #14111f;
+  --color-surface: #1e1930;
+  --color-surface-hover: #2a2342;
+  --color-border: #3a3157;
+  --color-text: #ece7f6;
+  --color-text-muted: #a99fc0;
+  --color-gold: #e8c36a;
+  --color-gold-strong: #f3d68f;
+  --color-violet: #9b7ce6;
+  --color-success: #5fcf8e;
+  --color-danger: #f2777a;
+  --color-on-gold: #1a1426;
+
+  /* Typographie */
+  --font-title: 'Cinzel Variable', Georgia, serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Espacements (échelle de 0,25rem) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Formes et effets */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-pill: 999px;
+  --shadow-card: 0 0.5rem 1.5rem rgb(0 0 0 / 35%);
+  --glow-gold: 0 0 1.25rem rgb(232 195 106 / 35%);
+  --transition: 160ms ease;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
-  color: #1f2328;
-  background: #f6f8fa;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  line-height: 1.6;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  /* Deux halos très doux (violet en haut, or en bas) pour donner de la profondeur au fond nuit. */
+  background-image:
+    radial-gradient(ellipse 60rem 30rem at 50% -10%, rgb(155 124 230 / 22%), transparent 70%),
+    radial-gradient(ellipse 40rem 20rem at 50% 110%, rgb(232 195 106 / 10%), transparent 70%);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-title);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-gold);
+}
+
+a {
+  color: var(--color-gold);
+}
+
+a:hover {
+  color: var(--color-gold-strong);
+}
+
+/* Focus clavier toujours visible (accessibilité), mais pas au clic souris. */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
+/* Bouton principal : or sur fond sombre. */
+button {
+  padding: var(--space-3) var(--space-6);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-on-gold);
+  background: var(--color-gold);
+  cursor: pointer;
+  transition:
+    background-color var(--transition),
+    box-shadow var(--transition);
+}
+
+button:hover:not(:disabled) {
+  background: var(--color-gold-strong);
+  box-shadow: var(--glow-gold);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Messages d'état partagés par les écrans. */
+.info {
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+/* Respecte le réglage système « réduire les animations ». */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

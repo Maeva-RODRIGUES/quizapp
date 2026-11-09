@@ -1,48 +1,33 @@
 .back {
-  color: #0969da;
   text-decoration: none;
 }
 
 fieldset {
-  margin: 1rem 0;
-  padding: 1rem;
-  border: 1px solid #d0d7de;
-  border-radius: 0.5rem;
-  background: #fff;
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 legend {
-  padding: 0 0.25rem;
+  padding: 0 var(--space-1);
   font-weight: 600;
 }
 
 label {
   display: block;
-  padding: 0.25rem 0;
+  padding: var(--space-1) 0;
   cursor: pointer;
+}
+
+input[type='radio'] {
+  accent-color: var(--color-gold);
 }
 
 .actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  font: inherit;
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
-
-.info {
-  color: #59636e;
-}
-
-.error {
-  color: #d1242f;
+  gap: var(--space-4);
 }
