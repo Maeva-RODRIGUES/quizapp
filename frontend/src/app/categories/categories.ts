@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { QuizApi } from '../api/quiz-api';
+import { themeOf } from './category-theme';
 
 /** Écran d'accueil : la liste des catégories, chacune menant à son quiz. */
 @Component({
@@ -19,4 +20,6 @@ export class Categories {
     stream: () => this.api.categories(),
     defaultValue: [],
   });
+
+  protected readonly themeOf = themeOf;
 }

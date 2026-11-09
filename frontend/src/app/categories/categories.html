@@ -1,17 +1,36 @@
-<h2>Choisis une catégorie</h2>
+<section class="intro">
+  <h2>Choisis ta collection</h2>
+  <p>
+    Chaque collection rassemble des questions sur des croyances et des peurs insolites. Réponds,
+    puis découvre ton score et les bonnes réponses.
+  </p>
+</section>
 
 @if (categories.isLoading()) {
-  <p class="info">Chargement des catégories…</p>
+  <!-- Cartes « squelettes » : on voit la forme de la page avant les données. Le texte reste lu par les lecteurs d'écran. -->
+  <p class="visually-hidden" role="status">Chargement des catégories…</p>
+  <ul class="grid" aria-hidden="true">
+    <li class="card skeleton"></li>
+    <li class="card skeleton"></li>
+  </ul>
 } @else if (categories.error()) {
-  <p class="error" role="alert">
-    Impossible de charger les catégories. L'API est-elle démarrée ?
-  </p>
-  <button type="button" (click)="categories.reload()">Réessayer</button>
+  <div class="card problem">
+    <p class="error" role="alert">
+      Impossible de charger les catégories. L'API est-elle démarrée&nbsp;?
+    </p>
+    <button type="button" (click)="categories.reload()">Réessayer</button>
+  </div>
 } @else {
-  <ul>
-    @for (category of categories.value(); track category.code) {
-      <li>
-        <a [routerLink]="['/quiz', category.code]">{{ category.label }}</a>
+  <ul class="grid">
+    @for (category of categories.value(); track category.code; let i = $index) {
+      @let theme = themeOf(category.code);
+      <li [style.--i]="i">
+        <a class="card" [routerLink]="['/quiz', category.code]">
+          <span class="emoji" aria-hidden="true">{{ theme.emoji }}</span>
+          <h3>{{ category.label }}</h3>
+          <p class="teaser">{{ theme.teaser }}</p>
+          <span class="cta" aria-hidden="true">Commencer →</span>
+        </a>
       </li>
     } @empty {
       <li class="info">Aucune catégorie pour l'instant.</li>
