@@ -1,6 +1,6 @@
 import { frenchSpacing, FrenchSpacingPipe } from './french-spacing.pipe';
 
-const NBSP = ' ';
+const NBSP = '\u00a0';
 
 describe('frenchSpacing', () => {
   it('makes the space before ? ! : ; non-breaking', () => {
@@ -23,6 +23,14 @@ describe('frenchSpacing', () => {
     expect(frenchSpacing('Vraiment?')).toBe('Vraiment?');
     expect(frenchSpacing('https://example.org')).toBe('https://example.org');
     expect(frenchSpacing('Japon')).toBe('Japon');
+  });
+
+  it('stays fast on a long run of spaces with no punctuation after it', () => {
+    const text = 'a' + ' '.repeat(100_000) + 'b';
+    const start = performance.now();
+
+    expect(frenchSpacing(text)).toBe('a b');
+    expect(performance.now() - start).toBeLessThan(200);
   });
 
   it('is available as a template pipe', () => {
