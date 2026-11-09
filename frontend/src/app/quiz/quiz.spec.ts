@@ -6,8 +6,18 @@ import { QuizApi } from '../api/quiz-api';
 import { Quiz } from './quiz';
 
 const QUESTIONS: Question[] = [
-  { id: 6, category: 'phobies', text: 'Peur des araignées ?', options: ['Entomophobie', 'Arachnophobie'] },
-  { id: 7, category: 'phobies', text: 'Peur des nombres ?', options: ['Arithmophobie', 'Chronophobie', 'Logophobie'] },
+  {
+    id: 6,
+    category: 'phobies',
+    text: 'Peur des araignées ?',
+    options: ['Entomophobie', 'Arachnophobie'],
+  },
+  {
+    id: 7,
+    category: 'phobies',
+    text: 'Peur des nombres ?',
+    options: ['Arithmophobie', 'Chronophobie', 'Logophobie'],
+  },
 ];
 const RESULT: QuizResult = {
   score: 1,
@@ -23,7 +33,9 @@ describe('Quiz', () => {
   let submit: ReturnType<typeof vi.fn<(request: SubmitQuizRequest) => Observable<QuizResult>>>;
   let navigate: ReturnType<typeof vi.spyOn>;
 
-  async function render(questions: () => Observable<Question[]> = () => of(QUESTIONS)): Promise<HTMLElement> {
+  async function render(
+    questions: () => Observable<Question[]> = () => of(QUESTIONS),
+  ): Promise<HTMLElement> {
     submit = vi.fn(() => of(RESULT));
     TestBed.configureTestingModule({
       imports: [Quiz],
@@ -36,20 +48,34 @@ describe('Quiz', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  async function pick(page: HTMLElement, questionId: number, optionIndex: number): Promise<void> {
-    page.querySelectorAll<HTMLInputElement>(`input[name="question-${questionId}"]`)[optionIndex].click();
+  /** Coche l'option n° optionIndex de la question affichée. */
+  async function pick(page: HTMLElement, optionIndex: number): Promise<void> {
+    page.querySelectorAll<HTMLInputElement>('fieldset input[type="radio"]')[optionIndex].click();
     await fixture.whenStable();
   }
 
-  const submitButton = (page: HTMLElement) => page.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+  /** Bouton principal du formulaire : « Suivant », ou « Valider mes réponses » sur la dernière question. */
+  const mainButton = (page: HTMLElement) =>
+    page.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+  const previousButton = (page: HTMLElement) =>
+    Array.from(page.querySelectorAll('button')).find((b) => b.textContent?.includes('Précédent'))!;
+  const heading = (page: HTMLElement) => page.querySelector('fieldset h2')?.textContent?.trim();
 
-  it('shows each question with its options, without any "a) b)" prefix', async () => {
+  async function clickMain(page: HTMLElement): Promise<void> {
+    mainButton(page).click();
+    await fixture.whenStable();
+  }
+
+  it('shows only the first question, with its options and no "a) b)" prefix', async () => {
     const page = await render();
 
-    const legends = Array.from(page.querySelectorAll('legend')).map((l) => l.textContent?.trim());
-    expect(legends).toEqual(['1. Peur des araignées ?', '2. Peur des nombres ?']);
-    expect(page.querySelectorAll('input[name="question-7"]')).toHaveLength(3);
-    expect(page.querySelector('label')?.textContent?.trim()).toBe('Entomophobie');
+    expect(page.querySelectorAll('fieldset')).toHaveLength(1);
+    expect(heading(page)).toBe('Peur des araignées ?');
+    expect(page.textContent).toContain('Question 1 / 2');
+    expect(Array.from(page.querySelectorAll('label')).map((l) => l.textContent?.trim())).toEqual([
+      'Entomophobie',
+      'Arachnophobie',
+    ]);
   });
 
   it('asks the API for the questions of the category taken from the URL', async () => {
@@ -59,35 +85,96 @@ describe('Quiz', () => {
     expect(questions).toHaveBeenCalledWith('phobies');
   });
 
-  it('keeps the submit button disabled until every question has an answer', async () => {
+  it('"Next" is enabled once the question is answered, then shows the next question and focuses it', async () => {
     const page = await render();
-    expect(submitButton(page).disabled).toBe(true);
+    expect(mainButton(page).textContent).toContain('Suivant');
+    expect(mainButton(page).disabled).toBe(true);
 
-    await pick(page, 6, 1);
-    expect(submitButton(page).disabled).toBe(true);
+    await pick(page, 1);
+    expect(mainButton(page).disabled).toBe(false);
+
+    await clickMain(page);
+    expect(heading(page)).toBe('Peur des nombres ?');
+    expect(page.textContent).toContain('Question 2 / 2');
+    expect(document.activeElement).toBe(page.querySelector('fieldset h2'));
+  });
+
+  it('"Previous" goes back with the answer still selected, and is disabled on the first question', async () => {
+    const page = await render();
+    expect(previousButton(page).disabled).toBe(true);
+    await pick(page, 1);
+    await clickMain(page);
+
+    previousButton(page).click();
+    await fixture.whenStable();
+
+    expect(heading(page)).toBe('Peur des araignées ?');
+    expect(page.querySelectorAll<HTMLInputElement>('fieldset input')[1].checked).toBe(true);
+  });
+
+  it('on the last question, the main button submits and stays disabled until every question is answered', async () => {
+    const page = await render();
+    await pick(page, 1);
+    await clickMain(page);
+
+    expect(mainButton(page).textContent).toContain('Valider mes réponses');
+    expect(mainButton(page).disabled).toBe(true);
+
+    await pick(page, 2);
+    expect(mainButton(page).disabled).toBe(false);
+  });
+
+  it('the progress bar follows the number of answered questions', async () => {
+    const page = await render();
+    const bar = () => page.querySelector('[role="progressbar"]')!;
+    expect(bar().getAttribute('aria-valuenow')).toBe('0');
+    expect(bar().getAttribute('aria-valuemax')).toBe('2');
+
+    await pick(page, 1);
+
+    expect(bar().getAttribute('aria-valuenow')).toBe('1');
     expect(page.textContent).toContain('1 / 2 réponses');
+  });
 
-    await pick(page, 7, 2);
-    expect(submitButton(page).disabled).toBe(false);
+  it('pressing Enter (form submission) on a question moves to the next one', async () => {
+    const page = await render();
+    await pick(page, 0);
+
+    page.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+    await fixture.whenStable();
+
+    expect(heading(page)).toBe('Peur des nombres ?');
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('pressing Enter on an unanswered question does nothing', async () => {
+    const page = await render();
+
+    page.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+    await fixture.whenStable();
+
+    expect(heading(page)).toBe('Peur des araignées ?');
   });
 
   it('changing an answer keeps only the last choice', async () => {
     const page = await render();
-    await pick(page, 6, 0);
-    await pick(page, 6, 1);
-    await pick(page, 7, 0);
+    await pick(page, 0);
+    await pick(page, 1);
+    await clickMain(page);
+    await pick(page, 0);
 
-    submitButton(page).click();
+    await clickMain(page);
 
     expect(submit).toHaveBeenCalledWith({ category: 'phobies', answers: { 6: 1, 7: 0 } });
   });
 
   it('submits the answers, then goes to the result screen with everything it needs', async () => {
     const page = await render();
-    await pick(page, 6, 1);
-    await pick(page, 7, 2);
+    await pick(page, 1);
+    await clickMain(page);
+    await pick(page, 2);
 
-    submitButton(page).click();
+    await clickMain(page);
 
     expect(submit).toHaveBeenCalledOnce();
     expect(navigate).toHaveBeenCalledWith(['/result'], {
@@ -98,21 +185,35 @@ describe('Quiz', () => {
   it('shows an error and lets the user retry when the submission fails', async () => {
     const page = await render();
     submit.mockReturnValueOnce(throwError(() => new Error('500')));
-    await pick(page, 6, 1);
-    await pick(page, 7, 2);
+    await pick(page, 1);
+    await clickMain(page);
+    await pick(page, 2);
 
-    submitButton(page).click();
-    await fixture.whenStable();
+    await clickMain(page);
 
     expect(page.querySelector('[role="alert"]')?.textContent).toContain("L'envoi a échoué");
     expect(navigate).not.toHaveBeenCalled();
-    expect(submitButton(page).disabled).toBe(false);
+    expect(mainButton(page).disabled).toBe(false);
+  });
+
+  it('a new category starts again from the first question, with no answer', async () => {
+    const page = await render();
+    await pick(page, 1);
+    await clickMain(page);
+
+    fixture.componentRef.setInput('category', 'superstitions');
+    await fixture.whenStable();
+
+    expect(heading(page)).toBe('Peur des araignées ?');
+    expect(page.textContent).toContain('0 / 2 réponses');
   });
 
   it('shows an error with a retry button when the questions cannot be loaded', async () => {
     const page = await render(() => throwError(() => new Error('503')));
 
-    expect(page.querySelector('[role="alert"]')?.textContent).toContain('Impossible de charger les questions');
+    expect(page.querySelector('[role="alert"]')?.textContent).toContain(
+      'Impossible de charger les questions',
+    );
     expect(page.querySelector('button')?.textContent).toContain('Réessayer');
   });
 

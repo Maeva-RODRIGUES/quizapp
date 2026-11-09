@@ -1,28 +1,53 @@
 <a routerLink="/" class="back">← Catégories</a>
 
 @if (questions.isLoading()) {
-  <p class="info">Chargement des questions…</p>
+  <p class="info" role="status">Chargement des questions…</p>
 } @else if (questions.error()) {
-  <p class="error" role="alert">Impossible de charger les questions. L'API est-elle démarrée ?</p>
-  <button type="button" (click)="questions.reload()">Réessayer</button>
-} @else if (questions.value().length === 0) {
+  <div class="card problem">
+    <p class="error" role="alert">
+      Impossible de charger les questions. L'API est-elle démarrée&nbsp;?
+    </p>
+    <button type="button" (click)="questions.reload()">Réessayer</button>
+  </div>
+} @else if (total() === 0) {
   <p class="info">Aucune question dans cette catégorie.</p>
 } @else {
-  <form (submit)="$event.preventDefault(); submit()">
-    @for (question of questions.value(); track question.id; let n = $index) {
-      <fieldset>
-        <legend>{{ n + 1 }}. {{ question.text }}</legend>
-        @for (option of question.options; track $index; let i = $index) {
-          <label>
-            <input
-              type="radio"
-              [name]="'question-' + question.id"
-              [checked]="answers()[question.id] === i"
-              (change)="choose(question.id, i)"
-            />
-            {{ option }}
-          </label>
-        }
+  <div class="status">
+    <span class="counter">Question {{ current() + 1 }} / {{ total() }}</span>
+    <span class="info">{{ answeredCount() }} / {{ total() }} réponses</span>
+  </div>
+  <div
+    class="progress"
+    role="progressbar"
+    aria-label="Questions répondues"
+    aria-valuemin="0"
+    [attr.aria-valuemax]="total()"
+    [attr.aria-valuenow]="answeredCount()"
+  >
+    <span class="bar" [style.width.%]="progress()"></span>
+  </div>
+
+  <form (submit)="$event.preventDefault(); next()">
+    <!-- Liste d'un seul élément suivie par l'id : Angular recrée le bloc à chaque question,
+         ce qui rejoue l'animation d'entrée (CSS) et remet les radios à neuf. -->
+    @for (question of [currentQuestion()]; track question.id) {
+      <fieldset class="card question">
+        <legend>
+          <h2 #heading tabindex="-1">{{ question.text }}</h2>
+        </legend>
+        <div class="options">
+          @for (option of question.options; track $index; let i = $index) {
+            <label class="option">
+              <input
+                type="radio"
+                [name]="'question-' + question.id"
+                [checked]="answers()[question.id] === i"
+                (change)="choose(question.id, i)"
+              />
+              <span class="text">{{ option }}</span>
+            </label>
+          }
+        </div>
       </fieldset>
     }
 
@@ -31,10 +56,16 @@
     }
 
     <div class="actions">
-      <span class="info">{{ answeredCount() }} / {{ questions.value().length }} réponses</span>
-      <button type="submit" [disabled]="!allAnswered() || submitting()">
-        {{ submitting() ? 'Envoi…' : 'Valider mes réponses' }}
+      <button type="button" class="secondary" [disabled]="isFirst()" (click)="previous()">
+        ← Précédent
       </button>
+      @if (isLast()) {
+        <button type="submit" [disabled]="!allAnswered() || submitting()">
+          {{ submitting() ? 'Envoi…' : 'Valider mes réponses' }}
+        </button>
+      } @else {
+        <button type="submit" [disabled]="!currentAnswered()">Suivant →</button>
+      }
     </div>
   </form>
 }

@@ -108,6 +108,16 @@ button:hover:not(:disabled) {
   box-shadow: var(--glow-gold);
 }
 
+/* Bouton secondaire : contour or, fond transparent. */
+button.secondary {
+  color: var(--color-gold);
+  background: transparent;
+}
+
+button.secondary:hover:not(:disabled) {
+  background: rgb(232 195 106 / 12%);
+}
+
 button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
