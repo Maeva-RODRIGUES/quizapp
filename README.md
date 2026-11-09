@@ -83,6 +83,8 @@ on répond aux questions une par une, puis on découvre son score et la correcti
   <img src="docs/screenshot-result.png" alt="Résultat : jauge circulaire 6 sur 7, message « Esprit initié », correction question par question" width="49%">
 </p>
 
+▶️ [Voir la démo en vidéo](docs/demo_quizapp.webm) : une partie complète, du choix de la collection jusqu'au score.
+
 Prérequis : Node.js 22. L'API doit tourner sur le port 8080 (voir [Démarrage rapide](#démarrage-rapide)).
 
 ```bash
