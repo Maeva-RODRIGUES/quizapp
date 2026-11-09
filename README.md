@@ -8,7 +8,7 @@ API REST de quiz en Java / Spring Boot, autour de deux catégories décalées :
 **Superstitions étranges** et **Phobies étranges**. On liste les questions, on soumet ses réponses, l'API corrige
 et calcule le score. On peut aussi **importer des questions depuis un fichier CSV** : un job Spring Batch
 applique des règles de qualité des données et produit un rapport des lignes rejetées.
-Un [front Angular](#front-angular) minimal permet de jouer au quiz dans le navigateur.
+Un [front Angular](#front-angular) permet de jouer au quiz dans le navigateur.
 
 > Né en 2024 comme prototype minimal, le projet a été entièrement refondu autour d'une stack orientée données :
 > PostgreSQL, Liquibase, jOOQ, Spring Batch, architecture hexagonale, tests d'intégration Testcontainers,
@@ -26,7 +26,7 @@ Un [front Angular](#front-angular) minimal permet de jouer au quiz dans le navig
 | Import de données | job Spring Batch **asynchrone** : validation, dédoublonnage, rapport des rejets, compteurs |
 | Tests | 244 tests : unitaires (JUnit 5, Mockito), `@WebMvcTest`, intégration sur un vrai PostgreSQL (Testcontainers) |
 | Livraison | image Docker multi-stage non-root, CI GitHub Actions, couverture JaCoCo, analyse SonarCloud |
-| Front (bonus) | Angular 22, TypeScript, signals, tests Vitest |
+| Front (bonus) | Angular 22, TypeScript, signals, CSS pur (design tokens), tests Vitest |
 
 ## Démarrage rapide
 
@@ -73,10 +73,15 @@ Sans `--profile app`, `docker compose up` ne démarre que PostgreSQL, comme `./m
 
 ## Front Angular
 
-Interface web minimale dans [`frontend/`](frontend) : on choisit une catégorie, on répond aux questions,
-puis on voit son score et la correction de chaque question.
+Interface web dans [`frontend/`](frontend), au thème « cabinet de curiosités » : on choisit une collection,
+on répond aux questions une par une, puis on découvre son score et la correction de chaque question.
 
-![Écran de résultat : score, réponses justes et fausses, bonne réponse affichée](docs/screenshot-quiz.png)
+![Accueil : deux cartes de catégorie, Superstitions étranges et Phobies étranges](docs/screenshot-home.png)
+
+<p>
+  <img src="docs/screenshot-question.png" alt="Une question : barre de progression, trois options A, B, C, la première choisie, boutons Précédent et Suivant" width="49%">
+  <img src="docs/screenshot-result.png" alt="Résultat : jauge circulaire 6 sur 7, message « Esprit initié », correction question par question" width="49%">
+</p>
 
 Prérequis : Node.js 22. L'API doit tourner sur le port 8080 (voir [Démarrage rapide](#démarrage-rapide)).
 
@@ -88,13 +93,22 @@ npm start    # http://localhost:4200
 
 | Écran | Route | Rôle |
 |---|---|---|
-| Catégories | `/` | liste les catégories (`GET /api/categories`) |
-| Quiz | `/quiz/:category` | affiche les questions, active le bouton d'envoi quand tout est répondu (`GET /api/questions`, `POST /api/quiz/submit`) |
-| Résultat | `/result` | score et correction ; ouvert directement sans quiz joué, il renvoie à l'accueil (*guard*) |
+| Catégories | `/` | cartes des catégories (`GET /api/categories`), avec un habillage par défaut pour une catégorie importée |
+| Quiz | `/quiz/:category` | une question par écran, barre de progression, Précédent / Suivant, envoi à la dernière question (`GET /api/questions`, `POST /api/quiz/submit`) |
+| Résultat | `/result` | jauge du score, message selon le palier, correction ; ouvert directement sans quiz joué, il renvoie à l'accueil (*guard*) |
 
 Le code suit les pratiques actuelles d'Angular : composants *standalone*, état local en *signals*
-(`signal`, `computed`), chargements via `rxResource` (états chargement / erreur / vide gérés dans le template),
-et un client HTTP typé (`QuizApi`) qui reprend les DTO de l'API.
+(`signal`, `computed`, `linkedSignal`), chargements via `rxResource` (états chargement / erreur / vide gérés
+dans le template), et un client HTTP typé (`QuizApi`) qui reprend les DTO de l'API.
+
+Le style est écrit en CSS pur, sans bibliothèque de composants :
+
+- **design tokens** (variables CSS de couleurs, espacements, rayons) définis une seule fois dans `styles.css` ;
+- police de titre (Cinzel) **auto-hébergée** via npm : aucun appel à un service externe, la démo fonctionne hors ligne ;
+- jauge du score en `conic-gradient`, animée grâce à `@property` ; options mises en forme avec `:has(input:checked)` ;
+- **accessibilité** : contrastes vérifiés (niveau WCAG AA), boutons radio natifs conservés (clavier, lecteurs d'écran),
+  focus visible et déplacé sur chaque nouvelle question, animations coupées si le système le demande
+  (`prefers-reduced-motion`).
 
 ## Architecture
 
@@ -437,7 +451,7 @@ et l'API derrière une même origine (reverse proxy).
 | Architecture | ArchUnit | sens des dépendances entre `domain`, `application` et `adapters` |
 | Web | `@WebMvcTest`, MockMvc | routes, validation, format des erreurs, DTO sans la bonne réponse |
 | Intégration (`*IT`) | Testcontainers (PostgreSQL 18), Awaitility | changelogs Liquibase, requêtes jOOQ, job Batch de bout en bout, API complète |
-| Front | Vitest, `HttpTestingController`, `RouterTestingHarness` | URL et corps des appels à l'API, états chargement / erreur / vide, réponses du quiz, *guard* de l'écran de résultat |
+| Front | Vitest, `HttpTestingController`, `RouterTestingHarness` | URL et corps des appels à l'API, états chargement / erreur / vide, navigation entre les questions, paliers du score, *guard* de l'écran de résultat |
 
 ```bash
 cd frontend && npm test -- --watch=false    # tests du front
@@ -470,7 +484,8 @@ rapport lcov de Vitest pour TypeScript (`npm test -- --watch=false --coverage`).
 - [x] **Phase 6** : job Spring Batch d'import CSV avec règles de qualité des données
 - [x] **Phase 7** : Dockerfile, intégration continue, SonarCloud
 - [x] **Phase 8** : documentation finale, licence
-- [x] **Phase 9 (bonus)** : front Angular minimal, testé et construit en CI
+- [x] **Phase 9 (bonus)** : front Angular minimal, testé et construit en CI, analysé par SonarCloud
+- [x] **Phase 10 (bonus)** : refonte visuelle du front pour la démo (thème, une question par écran, jauge du score)
 
 Piste non réalisée : décrire un déploiement AWS (conteneur sur ECS, front statique sur S3) en Terraform.
 
