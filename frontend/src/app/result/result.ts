@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CanActivateFn, Router, RouterLink } from '@angular/router';
 import { QuizOutcome } from '../quiz/quiz-outcome';
+import { percentOf, verdictOf } from './verdict';
 
 /** Lit le résultat transmis par l'écran de quiz dans l'état de la navigation en cours. */
 function outcomeOf(router: Router): QuizOutcome | undefined {
@@ -26,7 +27,7 @@ interface CorrectionRow {
   correct: boolean;
 }
 
-/** Écran de résultat : le score et la correction question par question. N'appelle pas l'API. */
+/** Écran de résultat : le score (jauge + message) et la correction question par question. N'appelle pas l'API. */
 @Component({
   selector: 'app-result',
   imports: [RouterLink],
@@ -43,11 +44,15 @@ export class Result {
    */
   protected readonly rows: CorrectionRow[] = this.toRows(this.outcome);
 
+  protected readonly percent = percentOf(this.outcome.result.score, this.outcome.result.total);
+  protected readonly verdict = verdictOf(this.outcome.result.score, this.outcome.result.total);
+
   private toRows({ questions, result }: QuizOutcome): CorrectionRow[] {
     const questionsById = new Map(questions.map((q) => [q.id, q]));
     return result.corrections.map((c) => {
       const question = questionsById.get(c.questionId);
-      const option = (index: number | null) => (index === null ? null : (question?.options[index] ?? `option ${index + 1}`));
+      const option = (index: number | null) =>
+        index === null ? null : (question?.options[index] ?? `option ${index + 1}`);
       return {
         questionId: c.questionId,
         text: question?.text ?? `Question ${c.questionId}`,

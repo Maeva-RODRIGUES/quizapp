@@ -11,8 +11,18 @@ class Home {}
 const OUTCOME: QuizOutcome = {
   category: 'phobies',
   questions: [
-    { id: 6, category: 'phobies', text: 'Peur des araignées ?', options: ['Entomophobie', 'Arachnophobie'] },
-    { id: 7, category: 'phobies', text: 'Peur des nombres ?', options: ['Arithmophobie', 'Chronophobie', 'Logophobie'] },
+    {
+      id: 6,
+      category: 'phobies',
+      text: 'Peur des araignées ?',
+      options: ['Entomophobie', 'Arachnophobie'],
+    },
+    {
+      id: 7,
+      category: 'phobies',
+      text: 'Peur des nombres ?',
+      options: ['Arithmophobie', 'Chronophobie', 'Logophobie'],
+    },
   ],
   answers: { 6: 1, 7: 2 },
   result: {
@@ -50,10 +60,19 @@ describe('Result', () => {
     return harness.routeNativeElement!;
   }
 
-  it('shows the score', async () => {
+  it('shows the score in the gauge, with a verdict and the percentage', async () => {
     const page = await open(OUTCOME);
 
-    expect(page.querySelector('h2')?.textContent).toContain('Ton score : 1 / 2');
+    expect(page.querySelector('.gauge')?.getAttribute('aria-label')).toBe('Score : 1 sur 2');
+    expect(page.querySelector('.gauge')?.textContent?.replace(/\s/g, '')).toBe('1/2');
+    expect(page.querySelector('h2')?.textContent).toContain('Curiosité en éveil'); // 50 %
+    expect(page.querySelector('.verdict')?.textContent).toContain('1 bonne réponse sur 2 (50');
+  });
+
+  it('fills the gauge up to the percentage of correct answers', async () => {
+    const page = await open(OUTCOME);
+
+    expect(page.querySelector<HTMLElement>('.gauge')?.style.getPropertyValue('--p')).toBe('50');
   });
 
   it('shows one line per question, with the texts instead of indexes', async () => {
@@ -61,10 +80,11 @@ describe('Result', () => {
 
     const items = Array.from(page.querySelectorAll('li'));
     expect(items).toHaveLength(2);
-    expect(items[0].textContent).toContain('Peur des araignées ?');
+    expect(items[0].textContent).toContain('Bonne réponse : Peur des araignées ?');
     expect(items[0].textContent).toContain('Arachnophobie');
     expect(items[0].classList).toContain('correct');
     expect(items[1].classList).toContain('wrong');
+    expect(items[1].textContent).toContain('Mauvaise réponse : Peur des nombres ?');
     expect(items[1].textContent).toContain('Ta réponse : Logophobie');
     expect(items[1].querySelector('strong')?.textContent).toBe('Arithmophobie');
   });
@@ -74,7 +94,9 @@ describe('Result', () => {
       ...OUTCOME,
       result: {
         ...OUTCOME.result,
-        corrections: [{ questionId: 7, givenOptionIndex: null, correctOptionIndex: 0, correct: false }],
+        corrections: [
+          { questionId: 7, givenOptionIndex: null, correctOptionIndex: 0, correct: false },
+        ],
       },
     };
     const page = await open(unanswered);
