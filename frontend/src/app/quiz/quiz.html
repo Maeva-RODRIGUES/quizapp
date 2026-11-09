@@ -33,7 +33,7 @@
     @for (question of [currentQuestion()]; track question.id) {
       <fieldset class="card question">
         <legend>
-          <h2 #heading tabindex="-1">{{ question.text }}</h2>
+          <h2 #heading tabindex="-1">{{ question.text | frenchSpacing }}</h2>
         </legend>
         <div class="options">
           @for (option of question.options; track $index; let i = $index) {
@@ -44,7 +44,7 @@
                 [checked]="answers()[question.id] === i"
                 (change)="choose(question.id, i)"
               />
-              <span class="text">{{ option }}</span>
+              <span class="text">{{ option | frenchSpacing }}</span>
             </label>
           }
         </div>

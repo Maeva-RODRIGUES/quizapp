@@ -5,6 +5,8 @@ import { Question, QuizResult, SubmitQuizRequest } from '../api/models';
 import { QuizApi } from '../api/quiz-api';
 import { Quiz } from './quiz';
 
+const NBSP = '\u00a0'; // espace insécable ajoutée à l'affichage (pipe frenchSpacing)
+
 const QUESTIONS: Question[] = [
   {
     id: 6,
@@ -70,7 +72,7 @@ describe('Quiz', () => {
     const page = await render();
 
     expect(page.querySelectorAll('fieldset')).toHaveLength(1);
-    expect(heading(page)).toBe('Peur des araignées ?');
+    expect(heading(page)).toBe(`Peur des araignées${NBSP}?`);
     expect(page.textContent).toContain('Question 1 / 2');
     expect(Array.from(page.querySelectorAll('label')).map((l) => l.textContent?.trim())).toEqual([
       'Entomophobie',
@@ -94,7 +96,7 @@ describe('Quiz', () => {
     expect(mainButton(page).disabled).toBe(false);
 
     await clickMain(page);
-    expect(heading(page)).toBe('Peur des nombres ?');
+    expect(heading(page)).toBe(`Peur des nombres${NBSP}?`);
     expect(page.textContent).toContain('Question 2 / 2');
     expect(document.activeElement).toBe(page.querySelector('fieldset h2'));
   });
@@ -108,7 +110,7 @@ describe('Quiz', () => {
     previousButton(page).click();
     await fixture.whenStable();
 
-    expect(heading(page)).toBe('Peur des araignées ?');
+    expect(heading(page)).toBe(`Peur des araignées${NBSP}?`);
     expect(page.querySelectorAll<HTMLInputElement>('fieldset input')[1].checked).toBe(true);
   });
 
@@ -143,7 +145,7 @@ describe('Quiz', () => {
     page.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
     await fixture.whenStable();
 
-    expect(heading(page)).toBe('Peur des nombres ?');
+    expect(heading(page)).toBe(`Peur des nombres${NBSP}?`);
     expect(submit).not.toHaveBeenCalled();
   });
 
@@ -153,7 +155,7 @@ describe('Quiz', () => {
     page.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
     await fixture.whenStable();
 
-    expect(heading(page)).toBe('Peur des araignées ?');
+    expect(heading(page)).toBe(`Peur des araignées${NBSP}?`);
   });
 
   it('changing an answer keeps only the last choice', async () => {
@@ -204,7 +206,7 @@ describe('Quiz', () => {
     fixture.componentRef.setInput('category', 'superstitions');
     await fixture.whenStable();
 
-    expect(heading(page)).toBe('Peur des araignées ?');
+    expect(heading(page)).toBe(`Peur des araignées${NBSP}?`);
     expect(page.textContent).toContain('0 / 2 réponses');
   });
 

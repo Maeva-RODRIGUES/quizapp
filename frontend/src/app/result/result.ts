@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CanActivateFn, Router, RouterLink } from '@angular/router';
 import { QuizOutcome } from '../quiz/quiz-outcome';
+import { FrenchSpacingPipe } from '../shared/french-spacing.pipe';
 import { percentOf, verdictOf } from './verdict';
 
 /** Lit le résultat transmis par l'écran de quiz dans l'état de la navigation en cours. */
@@ -30,7 +31,7 @@ interface CorrectionRow {
 /** Écran de résultat : le score (jauge + message) et la correction question par question. N'appelle pas l'API. */
 @Component({
   selector: 'app-result',
-  imports: [RouterLink],
+  imports: [RouterLink, FrenchSpacingPipe],
   templateUrl: './result.html',
   styleUrl: './result.css',
 })

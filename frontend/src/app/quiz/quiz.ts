@@ -14,11 +14,12 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { QuizApi } from '../api/quiz-api';
 import { QuizOutcome } from './quiz-outcome';
+import { FrenchSpacingPipe } from '../shared/french-spacing.pipe';
 
 /** Écran de jeu : une question à la fois, une réponse par question, puis la soumission. */
 @Component({
   selector: 'app-quiz',
-  imports: [RouterLink],
+  imports: [RouterLink, FrenchSpacingPipe],
   templateUrl: './quiz.html',
   styleUrl: './quiz.css',
 })

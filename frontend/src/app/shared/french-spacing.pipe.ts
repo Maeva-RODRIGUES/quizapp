@@ -1,0 +1,23 @@
+import { Pipe, PipeTransform } from '@angular/core';
+
+const NBSP = ' ';
+
+/**
+ * Typographie française : l'espace avant ? ! : ; et », et après «, devient insécable,
+ * pour que le signe ne parte jamais seul à la ligne.
+ *
+ * Appliqué à l'affichage seulement : les textes en base ne changent pas. La clé de dédoublonnage
+ * des questions (calculée en Java et en SQL) ne traite pas l'espace insécable comme une espace :
+ * l'enregistrer en base désaccorderait ces deux calculs.
+ */
+export function frenchSpacing(text: string): string {
+  return text.replace(/ +([?!:;»])/g, `${NBSP}$1`).replace(/« +/g, `«${NBSP}`);
+}
+
+/** Version pipe pour les templates : {{ question.text | frenchSpacing }}. Pure, donc recalculée seulement si le texte change. */
+@Pipe({ name: 'frenchSpacing' })
+export class FrenchSpacingPipe implements PipeTransform {
+  transform(text: string): string {
+    return frenchSpacing(text);
+  }
+}

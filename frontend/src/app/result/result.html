@@ -14,7 +14,7 @@
     <h2>
       <span aria-hidden="true">{{ verdict.emoji }}</span> {{ verdict.title }}
     </h2>
-    <p>{{ verdict.message }}</p>
+    <p>{{ verdict.message | frenchSpacing }}</p>
     <p class="info">
       {{ outcome.result.score }} bonne{{ outcome.result.score > 1 ? 's' : '' }} réponse{{
         outcome.result.score > 1 ? 's' : ''
@@ -37,16 +37,16 @@
       <div>
         <p class="question">
           <span class="visually-hidden">{{
-            row.correct ? 'Bonne réponse :' : 'Mauvaise réponse :'
+            (row.correct ? 'Bonne réponse :' : 'Mauvaise réponse :') | frenchSpacing
           }}</span>
-          {{ row.text }}
+          {{ row.text | frenchSpacing }}
         </p>
         @if (row.correct) {
-          <p>{{ row.expected }}</p>
+          <p>{{ row.expected | frenchSpacing }}</p>
         } @else {
-          <p class="given">Ta réponse : {{ row.given ?? 'aucune' }}</p>
+          <p class="given">Ta réponse&nbsp;: {{ row.given ?? 'aucune' | frenchSpacing }}</p>
           <p>
-            Bonne réponse : <strong>{{ row.expected }}</strong>
+            Bonne réponse&nbsp;: <strong>{{ row.expected | frenchSpacing }}</strong>
           </p>
         }
       </div>

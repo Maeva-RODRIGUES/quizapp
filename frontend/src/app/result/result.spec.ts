@@ -5,6 +5,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { QuizOutcome } from '../quiz/quiz-outcome';
 import { hasQuizOutcome, Result } from './result';
 
+const NBSP = '\u00a0'; // espace insécable ajoutée à l'affichage (pipe frenchSpacing)
+
 @Component({ template: 'accueil' })
 class Home {}
 
@@ -80,12 +82,12 @@ describe('Result', () => {
 
     const items = Array.from(page.querySelectorAll('li'));
     expect(items).toHaveLength(2);
-    expect(items[0].textContent).toContain('Bonne réponse : Peur des araignées ?');
+    expect(items[0].textContent).toContain(`Bonne réponse${NBSP}: Peur des araignées${NBSP}?`);
     expect(items[0].textContent).toContain('Arachnophobie');
     expect(items[0].classList).toContain('correct');
     expect(items[1].classList).toContain('wrong');
-    expect(items[1].textContent).toContain('Mauvaise réponse : Peur des nombres ?');
-    expect(items[1].textContent).toContain('Ta réponse : Logophobie');
+    expect(items[1].textContent).toContain(`Mauvaise réponse${NBSP}: Peur des nombres${NBSP}?`);
+    expect(items[1].textContent).toContain(`Ta réponse${NBSP}: Logophobie`);
     expect(items[1].querySelector('strong')?.textContent).toBe('Arithmophobie');
   });
 
@@ -101,7 +103,7 @@ describe('Result', () => {
     };
     const page = await open(unanswered);
 
-    expect(page.querySelector('li')?.textContent).toContain('Ta réponse : aucune');
+    expect(page.querySelector('li')?.textContent).toContain(`Ta réponse${NBSP}: aucune`);
   });
 
   it('offers to replay the same category or pick another one', async () => {
